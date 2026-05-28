@@ -832,11 +832,7 @@
       const password = document.getElementById('authPassword').value;
       if (!email || !password) { showNotification('请填写邮箱和密码', 'warning'); return; }
       try {
-        const result = await OCData.login(email, password);
-        if (!result) {
-          showNotification('登录失败：账号或密码不正确', 'error');
-          return;
-        }
+        await OCData.login(email, password);
         closeModal('authModal');
         showNotification('登录成功', 'success');
         // 刷新整个页面状态
@@ -846,7 +842,9 @@
         setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 100);
       } catch (e) {
         console.error('doLogin 异常:', e);
-        showNotification('登录失败：' + (e.message || '请检查账号密码'), 'error');
+        // 显示真实错误信息（不再笼统地说"密码错了"）
+        const msg = e.message || String(e);
+        showNotification('登录失败：' + msg, 'error');
       }
     }
     

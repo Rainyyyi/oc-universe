@@ -591,7 +591,8 @@ const OCDataProxy = {
         return true;
       } catch (e) {
         console.error('Appwrite 登录失败:', e);
-        return false;
+        // 抛出原始错误，让调用方显示真实的错误信息
+        throw e;
       }
     }
     return login(username, password);
