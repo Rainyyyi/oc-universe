@@ -731,9 +731,17 @@
       document.querySelectorAll('.admin-nav-item').forEach(item => {
         item.classList.remove('active');
       });
+      // 兼容两种调用方式：switchAdminTab('xxx', event) 和 switchAdminTab('xxx')
+      let targetItem = null;
       if (e && e.target) {
-        e.target.closest('.admin-nav-item').classList.add('active');
+        targetItem = e.target.closest('.admin-nav-item');
+      } else {
+        // fallback：根据 tab 名找对应导航项
+        const navMap = { dashboard:0, members:1, media:2, backup:3, 'settings-ai':4 };
+        const idx = navMap[tab];
+        if (idx !== undefined) targetItem = document.querySelectorAll('.admin-nav-item')[idx];
       }
+      if (targetItem) targetItem.classList.add('active');
 
       // 媒体库 tab 自动加载
       if (tab === 'media') loadMediaLibrary();
@@ -898,7 +906,9 @@
         loginOverlay.style.display = 'none';
         adminContent.style.display = 'block';
         loadRealStats();
-        if (window.lucide) lucide.createIcons();
+        // 渲染 Lucide 图标（多次确保成功）
+        try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+        setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 100);
       } else {
         loginOverlay.style.display = 'flex';
         adminContent.style.display = 'none';
@@ -920,7 +930,8 @@
                 adminContent.style.display = 'block';
                 loginError.style.display = 'none';
                 loadRealStats();
-                if (window.lucide) lucide.createIcons();
+                try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+                setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 100);
               } else {
                 loginError.style.display = 'block';
               }
@@ -933,12 +944,19 @@
             adminContent.style.display = 'block';
             loginError.style.display = 'none';
             loadRealStats();
+            try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+            setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 100);
           } else {
             loginError.style.display = 'block';
           }
         });
       }
     });
+
+    // 全局图标渲染兜底（确保导航栏等常驻区域的图标正常显示）
+    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 200);
+    setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 500);
   </script>
   </div>
 </body>

@@ -251,8 +251,11 @@ async function dbDelete(collectionId, documentId) {
     // 如果是权限问题，尝试给自己加 delete 权限后重试
     const msg = (err.message || '').toLowerCase();
     const status = err.status || err.code || '';
-    if (msg.includes('unauthorized') || msg.includes('forbidden') ||
-        msg.includes('not authorized') || String(status) === '401' || String(status) === '403') {
+    if (msg.includes('unauthorized') || String(status) === '401') {
+      // 401 = session 过期/未登录，补权限没用
+      throw new Error('登录已过期（401），请重新登录后再尝试删除。');
+    }
+    if (msg.includes('forbidden') || msg.includes('not authorized') || String(status) === '403') {
       try {
         const user = await getCurrentUser();
         if (user) {
@@ -270,7 +273,8 @@ async function dbDelete(collectionId, documentId) {
       } catch (retryErr) {
         console.warn('补权限重试也失败了:', retryErr);
       }
-      throw new Error('没有权限操作此数据。请确认你已登录且是数据的创建者。\n（如果是旧数据可能需要在 Appwrite 控制台手动设置权限）');
+      throw new Error('没有删除权限（403）。如果是旧数据，需要在 Appwrite 控制台给该文档添加你的用户权限。');
+    }
     }
     throw err;
   }
@@ -387,15 +391,19 @@ const AppwriteWorlds = {
     return dbUpdate(COLLECTIONS.WORLDS, id, data);
   },
   async delete(id) {
-    // 删除关联的角色和故事
-    const characters = await AppwriteCharacters.listByWorld(id);
-    for (const c of characters) {
-      await AppwriteCharacters.delete(c.$id);
-    }
-    const stories = await AppwriteStories.listByWorld(id);
-    for (const s of stories) {
-      await AppwriteStories.delete(s.$id);
-    }
+    // 删除关联的角色和故事（忽略单个失败，确保世界本身能被删掉）
+    try {
+      const characters = await AppwriteCharacters.listByWorld(id);
+      for (const c of characters) {
+        try { await AppwriteCharacters.delete(c.$id); } catch(e) { console.warn('删除关联角色失败:', c.$id, e.message); }
+      }
+    } catch(e) { console.warn('获取关联角色列表失败:', e.message); }
+    try {
+      const stories = await AppwriteStories.listByWorld(id);
+      for (const s of stories) {
+        try { await AppwriteStories.delete(s.$id); } catch(e) { console.warn('删除关联故事失败:', s.$id, e.message); }
+      }
+    } catch(e) { console.warn('获取关联故事列表失败:', e.message); }
     return dbDelete(COLLECTIONS.WORLDS, id);
   },
 };
