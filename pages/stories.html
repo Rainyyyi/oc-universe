@@ -400,7 +400,11 @@
       if (!container) return;
 
       try {
-        const stories = await OCData.getStories();
+        // 先并行拉取故事+世界观，避免 [object Promise]
+        const [stories, worlds] = await Promise.all([
+          OCData.getStories(),
+          preloadWorldNames()
+        ]);
 
         // 更新统计卡片和计数
         const total = stories.length;
@@ -441,7 +445,7 @@
               <div style="margin-top: var(--spacing-sm); display: flex; gap: var(--spacing-sm);">
                 <span class="tag tag-${statusTag}">${statusLabel}</span>
                 <span class="text-muted text-sm">${s.wordCount || 0} 字</span>
-                ${s.worldId ? `<span class="text-muted text-sm"><i data-lucide="Globe" style="width:0.8rem;height:0.8rem;display:inline;vertical-align:-2px;"></i> ${getWorldName(s.worldId)}</span>` : ''}
+                ${s.worldId ? `<span class="text-muted text-sm"><i data-lucide="Globe" style="width:0.8rem;height:0.8rem;display:inline;vertical-align:-2px;"></i> ${getWorldNameSync(s.worldId)}</span>` : ''}
               </div>
             </div>
           </div>`;
@@ -455,10 +459,14 @@
 
     // 缓存世界观名称映射（避免重复查询）
     let _worldNameCache = null;
-    async function getWorldName(worldId) {
+    async function preloadWorldNames() {
       if (!_worldNameCache) {
         try { _worldNameCache = await OCData.getWorlds().catch(() => []); } catch { _worldNameCache = []; }
       }
+      return _worldNameCache;
+    }
+    function getWorldNameSync(worldId) {
+      if (!_worldNameCache) return '';
       const w = _worldNameCache.find(x => (x.$id || x.id) === worldId);
       return w ? w.name : '';
     }
@@ -547,9 +555,165 @@
       overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     }
 
-    // 查看故事详情（TODO: 后续实现详情页/弹窗）
-    function viewStory(storyId) {
-      alert('故事详情功能开发中，ID: ' + storyId);
+    // 查看并编辑故事（打开编辑器模态框）
+    async function viewStory(storyId) {
+      // 先加载故事数据
+      let story;
+      try {
+        const allStories = await OCData.getStories();
+        story = allStories.find(s => (s.$id || s.id) === storyId);
+      } catch (e) {
+        console.error('加载故事失败:', e);
+        showNotification('加载故事失败', 'error');
+        return;
+      }
+      if (!story) {
+        showNotification('故事不存在', 'warning'); return;
+      }
+
+      // 预加载世界观
+      await preloadWorldNames();
+
+      const statusLabel = story.status === 'completed' ? '已完成' : story.status === 'writing' ? '写作中' : '草稿';
+      const statusTag = story.status === 'completed' ? 'success' : story.status === 'writing' ? 'primary' : 'warning';
+      const worldName = getWorldNameSync(story.worldId);
+
+      // 创建编辑模态框（动态注入，避免修改 HTML 结构太多）
+      let editorModal = document.getElementById('storyEditorModal');
+      if (!editorModal) {
+        editorModal = document.createElement('div');
+        editorModal.id = 'storyEditorModal';
+        editorModal.className = 'modal-overlay active';
+        document.body.appendChild(editorModal);
+
+        // 点击背景关闭
+        editorModal.onclick = function(e) { if (e.target === editorModal) closeStoryEditor(); };
+      } else {
+        editorModal.classList.add('active');
+      }
+
+      editorModal.innerHTML = `
+        <div class="modal modal-lg" style="max-width:900px;max-height:90vh;overflow-y:auto;" onclick="event.stopPropagation()">
+          <div class="modal-header" style="position:sticky;top:0;background:var(--bg-secondary);z-index:1;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <h3 class="modal-title" style="margin:0;" id="editorTitle">${story.title || '未命名故事'}</h3>
+              <span class="tag tag-${statusTag}" id="editorStatusTag">${statusLabel}</span>
+            </div>
+            <button class="modal-close" onclick="closeStoryEditor()" style="cursor:pointer;">
+              <i data-lucide="X"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- 基本信息区 -->
+            <div class="form-row" style="margin-bottom: var(--spacing-md);">
+              <div class="form-group" style="flex:2;">
+                <label class="form-label">标题</label>
+                <input type="text" class="form-input" id="editTitle" value="${(story.title || '').replace(/"/g, '&quot;')}">
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label class="form-label">状态</label>
+                <select class="form-input" id="editStatus">
+                  <option value="draft" ${story.status === 'draft' ? 'selected' : ''}>草稿</option>
+                  <option value="writing" ${story.status === 'writing' ? 'selected' : ''}>写作中</option>
+                  <option value="completed" ${story.status === 'completed' ? 'selected' : ''}>已完成</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom: var(--spacing-md);">
+              <label class="form-label">所属世界观</label>
+              <input type="text" class="form-input" value="${worldName}" disabled style="opacity:.7;">
+            </div>
+
+            <!-- 故事梗概 -->
+            <div class="form-group" style="margin-bottom: var(--spacing-md);">
+              <label class="form-label">故事梗概</label>
+              <textarea class="form-input form-textarea" id="editSummary" rows="3" placeholder="简述故事的主要情节...">${(story.description || story.summary || '').replace(/</g, '&lt;')}</textarea>
+            </div>
+
+            <!-- 正文编辑区 -->
+            <div class="form-group" style="margin-bottom: var(--spacing-md);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label class="form-label" style="margin:0;">正文内容</label>
+                <span class="text-muted text-sm" id="editWordCount">0 字</span>
+              </div>
+              <textarea class="form-input form-textarea" id="editContent"
+                rows="20" style="font-size:1rem;line-height:1.8;min-height:400px;"
+                placeholder="在这里写下你的故事...">${(story.content || '').replace(/</g, '&lt;')}</textarea>
+            </div>
+          </div>
+          <div class="modal-footer" style="position:sticky;bottom:0;background:var(--bg-secondary);z-index:1;">
+            <button class="btn btn-danger" style="margin-right:auto;" onclick="deleteStoryConfirm('${story.$id || story.id}')">
+              <i data-lucide="Trash2"></i> 删除
+            </button>
+            <button class="btn btn-secondary" onclick="closeStoryEditor()">取消</button>
+            <button class="btn btn-primary" onclick="saveStory('${story.$id || story.id}')">
+              <i data-lucide="Save"></i> 保存
+            </button>
+          </div>
+        </div>`;
+
+      // 字数统计
+      updateWordCount();
+      document.getElementById('editContent').addEventListener('input', updateWordCount);
+      document.getElementById('editTitle').addEventListener('input', function() {
+        document.getElementById('editorTitle').textContent = this.value || '未命名故事';
+      });
+
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+
+      // 保存当前编辑的故事 ID
+      _editingStoryId = story.$id || story.id;
+    }
+
+    let _editingStoryId = null;
+
+    function updateWordCount() {
+      const el = document.getElementById('editContent');
+      const countEl = document.getElementById('editWordCount');
+      if (el && countEl) countEl.textContent = el.value.length + ' 字';
+    }
+
+    function closeStoryEditor() {
+      const m = document.getElementById('storyEditorModal');
+      if (m) m.classList.remove('active');
+      _editingStoryId = null;
+    }
+
+    async function saveStory(storyId) {
+      const title = document.getElementById('editTitle').value.trim();
+      const status = document.getElementById('editStatus').value;
+      const summary = document.getElementById('editSummary').value.trim();
+      const content = document.getElementById('editContent').value;
+
+      if (!title) { showNotification('请填写标题', 'warning'); return; }
+
+      try {
+        await OCData.updateStory(storyId, {
+          title, status,
+          summary, description: summary,
+          content, wordCount: content.length
+        });
+        showNotification('保存成功！', 'success');
+        closeStoryEditor();
+        _worldNameCache = null;  // 刷新缓存
+        await loadStories();
+      } catch (err) {
+        console.error('保存失败:', err);
+        showNotification('保存失败：' + (err.message || '未知错误'), 'error');
+      }
+    }
+
+    async function deleteStoryConfirm(storyId) {
+      if (!confirm('确定要删除这个故事吗？此操作不可恢复。')) return;
+      try {
+        await OCData.deleteStory(storyId);
+        showNotification('已删除', 'success');
+        closeStoryEditor();
+        await loadStories();
+      } catch (err) {
+        console.error('删除失败:', err);
+        showNotification('删除失败：' + (err.message || '未知错误'), 'error');
+      }
     }
 
     // 通知提示（兼容 app.js 或本地定义，避免自己调自己死循环）
