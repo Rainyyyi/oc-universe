@@ -386,23 +386,23 @@
     <aside class="admin-sidebar">
       <div class="sidebar-section-title">管理导航</div>
       <nav>
-        <div class="admin-nav-item active" onclick="switchAdminTab('dashboard')">
+        <div class="admin-nav-item active" onclick="switchAdminTab('dashboard', event)">
           <i data-lucide="LayoutDashboard"></i>
           <span>仪表盘</span>
         </div>
-        <div class="admin-nav-item" onclick="switchAdminTab('members')">
+        <div class="admin-nav-item" onclick="switchAdminTab('members', event)">
           <i data-lucide="UserPlus"></i>
           <span>成员管理</span>
         </div>
-        <div class="admin-nav-item" onclick="switchAdminTab('media')">
+        <div class="admin-nav-item" onclick="switchAdminTab('media', event)">
           <i data-lucide="Image"></i>
           <span>媒体库</span>
         </div>
-        <div class="admin-nav-item" onclick="switchAdminTab('backup')">
+        <div class="admin-nav-item" onclick="switchAdminTab('backup', event)">
           <i data-lucide="Database"></i>
           <span>备份导出</span>
         </div>
-        <div class="admin-nav-item" onclick="switchAdminTab('settings-ai')">
+        <div class="admin-nav-item" onclick="switchAdminTab('settings-ai', event)">
           <i data-lucide="Bot"></i>
           <span>AI配置</span>
         </div>
@@ -713,7 +713,7 @@
     }
     
     // 切换管理标签页
-    function switchAdminTab(tab) {
+    function switchAdminTab(tab, e) {
       // 隐藏所有标签页
       document.querySelectorAll('[id^="tab-"]').forEach(el => {
         el.style.display = 'none';
@@ -731,7 +731,9 @@
       document.querySelectorAll('.admin-nav-item').forEach(item => {
         item.classList.remove('active');
       });
-      event.target.closest('.admin-nav-item').classList.add('active');
+      if (e && e.target) {
+        e.target.closest('.admin-nav-item').classList.add('active');
+      }
 
       // 媒体库 tab 自动加载
       if (tab === 'media') loadMediaLibrary();
@@ -896,6 +898,7 @@
         loginOverlay.style.display = 'none';
         adminContent.style.display = 'block';
         loadRealStats();
+        if (window.lucide) lucide.createIcons();
       } else {
         loginOverlay.style.display = 'flex';
         adminContent.style.display = 'none';
@@ -917,6 +920,7 @@
                 adminContent.style.display = 'block';
                 loginError.style.display = 'none';
                 loadRealStats();
+                if (window.lucide) lucide.createIcons();
               } else {
                 loginError.style.display = 'block';
               }
