@@ -57,7 +57,7 @@
         <i data-lucide="Moon" class="icon-moon"></i>
         <i data-lucide="Sun" class="icon-sun"></i>
       </button>
-      <a href="pages/admin.html" class="btn btn-primary btn-sm" onclick="if(!isLoggedIn()){showLoginModal();return false;}">
+      <a href="pages/admin.html" class="btn btn-primary btn-sm" id="adminLink" onclick="return checkAdminAccess(event);">
         <i data-lucide="Settings"></i>
         <span>管理后台</span>
       </a>
@@ -674,6 +674,15 @@
     }
     
     // ---- 登录/注册模态框 ----
+    async function checkAdminAccess(e) {
+      const loggedIn = await OCData.isLoggedIn();
+      if (!loggedIn) {
+        e.preventDefault();
+        showLoginModal();
+        return false;
+      }
+      return true;
+    }
     function showLoginModal() {
       const el = document.getElementById('authModal');
       if (el) el.classList.add('active');
@@ -717,6 +726,15 @@
       document.getElementById('authLoginPane').style.display = mode === 'login' ? '' : 'none';
       document.getElementById('authRegisterPane').style.display = mode === 'register' ? '' : 'none';
       document.getElementById('authModalTitle').textContent = mode === 'login' ? '登录' : '注册';
+      // 切换 tab 按钮样式
+      const tabs = document.querySelectorAll('#authModal .modal-body > div[style*="display:flex"]');
+      if (tabs.length >= 1) {
+        const btns = tabs[0].querySelectorAll('button');
+        if (btns.length >= 2) {
+          btns[0].className = mode === 'login' ? 'btn btn-secondary' : 'btn btn-ghost';
+          btns[1].className = mode === 'register' ? 'btn btn-secondary' : 'btn btn-ghost';
+        }
+      }
     }
   </script>
 

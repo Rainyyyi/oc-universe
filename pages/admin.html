@@ -584,6 +584,10 @@
 
   <!-- JavaScript -->
   <script src="../js/app.js"></script>
+  <!-- Appwrite 云端支持（defer 不阻塞） -->
+  <script defer src="https://cdn.jsdelivr.net/npm/appwrite@17/dist/iife/sdk.min.js"></script>
+  <script src="../js/appwrite.js"></script>
+  <script src="../js/api-client.js"></script>
   <script src="../js/data.js"></script>
   <script>
     // 页面初始化
@@ -654,36 +658,63 @@
   <!-- 登录验证脚本 -->
   <script>
     // 页面加载时检查登录状态
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       const loginOverlay = document.getElementById('loginOverlay');
       const adminContent = document.getElementById('adminContent');
       const loginForm = document.getElementById('loginForm');
       const loginError = document.getElementById('loginError');
-      
-      // 检查是否已登录
-      if (typeof OCData !== 'undefined' && OCData.isLoggedIn()) {
+
+      // 先初始化数据模式（检测 Appwrite 云端登录状态）
+      if (typeof OCData !== 'undefined') {
+        await OCData.initDataMode();
+      }
+
+      // 异步检查是否已登录（兼容本地 + 云端）
+      let loggedIn = false;
+      if (typeof OCData !== 'undefined') {
+        loggedIn = await OCData.isLoggedIn();
+      } else {
+        loggedIn = isLoggedIn(); // 降级到本地检测
+      }
+
+      if (loggedIn) {
         loginOverlay.classList.add('hidden');
         adminContent.style.display = 'block';
+        loadRealStats();
       } else {
         loginOverlay.classList.remove('hidden');
         adminContent.style.display = 'none';
       }
-      
+
       // 登录表单提交
       if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
           e.preventDefault();
-          
+
           const username = document.getElementById('loginUsername').value;
           const password = document.getElementById('loginPassword').value;
-          
-          if (typeof OCData !== 'undefined' && OCData.login(username, password)) {
-            // 登录成功
+
+          if (typeof OCData !== 'undefined') {
+            try {
+              const success = await OCData.login(username, password);
+              if (success) {
+                loginOverlay.classList.add('hidden');
+                adminContent.style.display = 'block';
+                loginError.style.display = 'none';
+                loadRealStats();
+              } else {
+                loginError.style.display = 'block';
+              }
+            } catch(err) {
+              loginError.style.display = 'block';
+            }
+          } else if (typeof verifyLogin !== 'undefined' && verifyLogin(username, password)) {
+            login(username, password);
             loginOverlay.classList.add('hidden');
             adminContent.style.display = 'block';
             loginError.style.display = 'none';
+            loadRealStats();
           } else {
-            // 登录失败
             loginError.style.display = 'block';
           }
         });
