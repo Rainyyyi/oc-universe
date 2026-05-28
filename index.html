@@ -573,10 +573,10 @@
     async function loadWorlds() {
       const container = document.getElementById('worldsList');
       if (!container) return;
-      
+
       try {
         const worlds = await OCData.getWorlds();
-        
+
         if (!worlds || worlds.length === 0) {
           container.innerHTML = `
             <div class="characters-empty-guide" style="grid-column: 1 / -1;">
@@ -634,7 +634,38 @@
         
         const typeLabels = { fantasy:'奇幻', scifi:'科幻', modern:'现代', historical:'古风', other:'其他' };
         const toneLabels = { dark:'黑暗', light:'温馨', neutral:'中性', mixed:'明暗交织' };
-        
+
+        // 用实际查询到的角色/故事数量覆盖可能过期的 characterCount / storyCount
+        //（云端创建角色时不会回写世界观的计数字段，导致卡片显示 0）
+        try {
+          const [allCharacters, allStories] = await Promise.all([
+            OCData.getCharacters().catch(() => []),
+            OCData.getStories().catch(() => [])
+          ]);
+          const worldIdMap = {};
+          worlds.forEach(w => { worldIdMap[w.$id || w.id] = w; });
+          // 按世界观聚合计数
+          for (const c of allCharacters) {
+            const wid = c.worldId;
+            if (wid && worldIdMap[wid]) {
+              worldIdMap[wid]._realCharCount = (worldIdMap[wid]._realCharCount || 0) + 1;
+            }
+          }
+          for (const s of allStories) {
+            const wid = s.worldId;
+            if (wid && worldIdMap[wid]) {
+              worldIdMap[wid]._realStoryCount = (worldIdMap[wid]._realStoryCount || 0) + 1;
+            }
+          }
+          // 回填到每个世界观对象
+          worlds.forEach(w => {
+            if (w._realCharCount !== undefined) w.characterCount = w._realCharCount;
+            if (w._realStoryCount !== undefined) w.storyCount = w._realStoryCount;
+          });
+        } catch (countErr) {
+          console.warn('获取角色/故事计数失败，使用默认值:', countErr);
+        }
+
         container.innerHTML = worlds.map(w => `
           <div class="card" style="cursor:pointer;" onclick="showWorldDetail('${w.$id || w.id}')">
             <div class="card-cover" style="height:140px;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius-md) var(--radius-md) 0 0;">
