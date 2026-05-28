@@ -243,9 +243,71 @@
       transition: width var(--transition-normal);
     }
     @media (max-width: 1024px) {
-      .admin-sidebar {
-        display: none;
-      }
+      .admin-sidebar { display: none; }
+    }
+    /* 媒体库网格 */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: var(--spacing-md);
+    }
+    .media-item {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--bg-tertiary);
+      aspect-ratio: 1;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .media-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .media-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .media-item-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: linear-gradient(transparent, rgba(0,0,0,0.7));
+      color: #fff;
+      font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .media-item:hover .media-item-overlay {
+      opacity: 1;
+    }
+    .media-item-delete {
+      background: rgba(239,68,68,0.8);
+      border: none;
+      color: #fff;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      transition: background 0.2s;
+    }
+    .media-item-delete:hover {
+      background: #ef4444;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -340,23 +402,11 @@
           <i data-lucide="Database"></i>
           <span>备份导出</span>
         </div>
-      </nav>
-      
-      <div class="sidebar-section" style="margin-top: auto;">
-        <div class="sidebar-section-title">系统设置</div>
-        <div class="admin-nav-item" onclick="switchAdminTab('settings-global')">
-          <i data-lucide="Settings"></i>
-          <span>全局设置</span>
-        </div>
-        <div class="admin-nav-item" onclick="switchAdminTab('settings-theme')">
-          <i data-lucide="Palette"></i>
-          <span>主题设置</span>
-        </div>
         <div class="admin-nav-item" onclick="switchAdminTab('settings-ai')">
           <i data-lucide="Bot"></i>
           <span>AI配置</span>
         </div>
-      </div>
+      </nav>
     </aside>
 
     <!-- 主内容区 -->
@@ -571,90 +621,28 @@
           </div>
         </div>
       </div>
-      <!-- 全局设置 -->
-      <div id="tab-settings-global" style="display: none;">
+      <!-- 媒体库 -->
+      <div id="tab-media" style="display: none;">
         <header class="page-header">
           <div class="page-title">
-            <h1>⚙️ 全局设置</h1>
+            <h1>🖼️ 媒体库</h1>
+          </div>
+          <div class="page-actions">
+            <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+              <i data-lucide="Upload"></i> 上传图片
+              <input type="file" id="mediaUploadInput" accept="image/*" multiple style="display:none;" onchange="handleMediaUpload(this.files)">
+            </label>
+            <button class="btn btn-secondary btn-sm" onclick="loadMediaLibrary()">
+              <i data-lucide="RefreshCw"></i> 刷新
+            </button>
           </div>
         </header>
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">基本设置</h3>
-          </div>
-          <div class="card-body">
-            <div class="form-group">
-              <label class="form-label">站点名称</label>
-              <input type="text" class="form-input" value="OC宇宙" style="max-width: 400px;">
-              <p class="text-muted text-sm" style="margin-top: 4px;">显示在浏览器标题栏和导航栏的名称</p>
-            </div>
-            <div class="form-group">
-              <label class="form-label">默认语言</label>
-              <select class="form-input" style="max-width: 400px;">
-                <option value="zh-CN" selected>简体中文</option>
-                <option value="en">English</option>
-                <option value="ja">日本語</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">数据存储模式</label>
-              <select class="form-input" id="storageModeSelect" style="max-width: 400px;" onchange="onStorageModeChange(this.value)">
-                <option value="cloud">☁️ Appwrite 云端（推荐）</option>
-                <option value="local">💾 本地存储（离线）</option>
-              </select>
-              <p class="text-muted text-sm" style="margin-top: 4px;">切换后刷新页面生效。本地模式下数据仅保存在浏览器中。</p>
-            </div>
-          </div>
-          <div class="card-footer" style="border-top: 1px solid var(--border-color); padding: var(--spacing-md) var(--spacing-xl); display:flex; justify-content: flex-end;">
-            <button class="btn btn-primary" onclick="showNotification('设置已保存', 'success')"><i data-lucide="Check"></i> 保存设置</button>
-          </div>
-        </div>
-      </div>
 
-      <!-- 主题设置 -->
-      <div id="tab-settings-theme" style="display: none;">
-        <header class="page-header">
-          <div class="page-title">
-            <h1>🎨 主题设置</h1>
-          </div>
-        </header>
-        <div class="grid-cards" style="grid-template-columns: repeat(2, 1fr);">
-          <div class="card" onclick="setThemePreview('light')" style="cursor:pointer; border: 2px solid transparent;" id="themeCard-light">
-            <div class="card-body" style="text-align:center; padding: var(--spacing-xl);">
-              <div style="width:100%; height:120px; background: linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 50%, #FFFFFF 100%); border-radius: var(--radius-lg); margin-bottom: var(--spacing-md); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;">
-                <span style="font-size:2rem;">🌅</span>
-                <span style="font-weight:600; color:#92400E;">晨曦模式</span>
-              </div>
-              <p class="text-muted text-sm">温暖明亮的日间主题</p>
-            </div>
-          </div>
-          <div class="card" onclick="setThemePreview('dark')" style="cursor:pointer; border: 2px solid transparent;" id="themeCard-dark">
-            <div class="card-body" style="text-align:center; padding: var(--spacing-xl);">
-              <div style="width:100%; height:120px; background: linear-gradient(135deg, #070B14 0%, #0D1424 50%, #111827 100%); border-radius: var(--radius-lg); margin-bottom: var(--spacing-md); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;">
-                <span style="font-size:2rem;">✨</span>
-                <span style="font-weight:600; color:#93C5FD;">星夜模式</span>
-              </div>
-              <p class="text-muted text-sm">深邃静谧的夜间主题</p>
-            </div>
-          </div>
-        </div>
-        <div class="card" style="margin-top: var(--spacing-lg);">
-          <div class="card-header">
-            <h3 class="card-title">主题预览</h3>
-          </div>
-          <div class="card-body">
-            <div style="display:flex; align-items:center; gap:var(--spacing-md); margin-bottom: var(--spacing-md);">
-              <span>当前主题：</span>
-              <strong id="currentThemeLabel">晨曦模式</strong>
-              <button class="btn btn-primary btn-sm" onclick="applyThemeChoice()"><i data-lucide="Check"></i> 应用主题</button>
-            </div>
-            <div id="themePreviewArea" style="padding: var(--spacing-lg); border-radius: var(--radius-lg); background: var(--bg-secondary); border: 1px solid var(--border-color);">
-              <div style="display:flex; gap: var(--spacing-sm);">
-                <button class="btn btn-primary btn-sm">主按钮</button>
-                <button class="btn btn-secondary btn-sm">次按钮</button>
-                <button class="btn btn-ghost btn-sm">文字按钮</button>
-              </div>
-              <p style="margin-top: var(--spacing-md);" class="text-muted">这是一段示例文本，用于预览当前主题下的字体颜色和排版效果。</p>
+        <div class="card">
+          <div class="card-body" id="mediaLibraryContent">
+            <div style="text-align:center; padding:var(--spacing-xxl); color:var(--text-muted);">
+              <i data-lucide="Image" style="font-size:2.5rem; margin-bottom:var(--spacing-md); display:inline-block;"></i>
+              <p>正在加载媒体库...</p>
             </div>
           </div>
         </div>
@@ -730,7 +718,7 @@
       document.querySelectorAll('[id^="tab-"]').forEach(el => {
         el.style.display = 'none';
       });
-      
+
       // 显示选中的标签页
       const tabElement = document.getElementById('tab-' + tab);
       if (tabElement) {
@@ -738,12 +726,15 @@
       } else {
         document.getElementById('tab-dashboard').style.display = 'block';
       }
-      
+
       // 更新导航状态
       document.querySelectorAll('.admin-nav-item').forEach(item => {
         item.classList.remove('active');
       });
       event.target.closest('.admin-nav-item').classList.add('active');
+
+      // 媒体库 tab 自动加载
+      if (tab === 'media') loadMediaLibrary();
     }
     
     // 导出全部数据
@@ -772,38 +763,109 @@
       alert('打开导入对话框');
     }
 
-    // ---- 主题设置相关 ----
-    let _chosenTheme = localStorage.getItem('oc_theme') || 'light';
-    function setThemePreview(mode) {
-      _chosenTheme = mode;
-      document.getElementById('currentThemeLabel').textContent = mode === 'dark' ? '星夜模式' : '晨曦模式';
-      document.querySelectorAll('#tab-settings-theme .card[onclick]').forEach(c => c.style.borderColor = 'transparent');
-      document.getElementById('themeCard-' + mode).style.borderColor = 'var(--primary-color)';
-      // 实时预览
-      document.documentElement.setAttribute('data-theme', mode);
-      document.getElementById('themePreviewArea').setAttribute('data-theme', mode);
-    }
-    function applyThemeChoice() {
-      localStorage.setItem('oc_theme', _chosenTheme);
-      document.documentElement.setAttribute('data-theme', _chosenTheme);
-      showNotification('主题已切换为' + (_chosenTheme === 'dark' ? '星夜' : '晨曦') + '模式，刷新后全局生效', 'success');
-    }
-    // 初始化主题卡片高亮
-    (function initThemeCards() {
-      const t = _chosenTheme;
-      if (document.getElementById('themeCard-' + t)) {
-        document.getElementById('themeCard-' + t).style.borderColor = 'var(--primary-color)';
-        document.getElementById('currentThemeLabel').textContent = t === 'dark' ? '星夜模式' : '晨曦模式';
-      }
-    })();
+    // ---- 媒体库（Appwrite Storage）----
+    async function loadMediaLibrary() {
+      const container = document.getElementById('mediaLibraryContent');
+      if (!container) return;
 
-    // ---- 全局设置：存储模式切换 ----
-    function onStorageModeChange(val) {
-      if (val === 'local') {
-        // 清除 Appwrite 配置来强制本地模式（临时）
-        showNotification('已切换到本地存储模式，刷新页面生效。如需恢复云端，请在 Appwrite 中重新配置。', 'info');
-      } else {
-        showNotification('云端模式需要有效的 Appwrite 配置', 'info');
+      if (typeof window.Appwrite === 'undefined' || !BUCKET_ID() || isPlaceholderConfig()) {
+        container.innerHTML = '<div style="text-align:center; padding:var(--spacing-xxl); color:var(--text-muted);"><i data-lucide="CloudOff" style="font-size:2.5rem; margin-bottom:var(--spacing-md); display:inline-block;"></i><p>媒体库需要连接到 Appwrite 云端存储</p><p class="text-sm">请先完成云端配置</p></div>';
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = '<div style="text-align:center; padding:var(--spacing-xxl); color:var(--text-muted);"><i data-lucide="Loader2" style="font-size:2rem; margin-bottom:var(--spacing-md); display:inline-block; animation:spin 1s linear infinite;"></i><p>正在加载文件列表...</p></div>';
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        const storage = new window.Appwrite.Storage(window.appwriteClient);
+        const bucketId = BUCKET_ID();
+        try { await getAccount(); } catch(e) {}
+
+        const result = await storage.listFiles(bucketId, [
+          window.Appwrite.Query.orderDesc('$createdAt'),
+          window.Appwrite.Query.limit(100),
+        ]);
+
+        const files = result.files || [];
+
+        if (files.length === 0) {
+          container.innerHTML = '<div style="text-align:center; padding:var(--spacing-xxl); color:var(--text-muted);"><i data-lucide="Image" style="font-size:2.5rem; margin-bottom:var(--spacing-md); display:inline-block;"></i><p>媒体库为空</p><p class="text-sm">点击右上角"上传图片"开始添加</p></div>';
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+
+        const imageFiles = files.filter(f => {
+          const ext = (f.name || '').split('.').pop().toLowerCase();
+          return ['jpg','jpeg','png','gif','webp','svg','bmp','ico'].includes(ext);
+        });
+
+        if (imageFiles.length === 0) {
+          container.innerHTML = '<div style="text-align:center; padding:var(--spacing-xxl); color:var(--text-muted);"><i data-lucide="Image" style="font-size:2.5rem; margin-bottom:var(--spacing-md); display:inline-block;"></i><p>暂无图片文件</p><p class="text-sm">已有 ' + files.length + ' 个文件，但都不是图片格式</p></div>';
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+
+        const endpoint = ENDPOINT().replace('/v1', '');
+        let html = '<div class="media-grid">';
+        imageFiles.forEach(file => {
+          const previewUrl = endpoint + '/storage/buckets/' + bucketId + '/files/' + file.$id + '/preview?project=' + PROJECT_ID() + '&width=400&height=400&quality=80';
+          const fullUrl = endpoint + '/storage/buckets/' + bucketId + '/files/' + file.$id + '/view?project=' + PROJECT_ID();
+          html += '<div class="media-item" onclick="window.open(\'' + fullUrl + '\', \'_blank\')" title="' + (file.name || '') + '">' +
+            '<img src="' + previewUrl + '" alt="' + (file.name || '') + '" loading="lazy">' +
+            '<div class="media-item-overlay">' +
+              '<span title="' + (file.name || '') + '">' + ((file.name || '').length > 10 ? (file.name || '').slice(0,8) + '..' : (file.name || '')) + '</span>' +
+              '<button class="media-item-delete" onclick="event.stopPropagation(); deleteMediaFile(\'' + file.$id + '\', \'' + (file.name || '') + '\')" title="删除"><i data-lucide="Trash2"></i></button>' +
+            '</div>' +
+          '</div>';
+        });
+        html += '</div>';
+        html += '<div style="margin-top: var(--spacing-lg); text-align:center; color: var(--text-muted); font-size: 0.85rem;">共 ' + imageFiles.length + ' 张图片' +
+          (imageFiles.length < files.length ? '（已隐藏 ' + (files.length - imageFiles.length) + ' 个非图片文件）' : '') + '</div>';
+
+        container.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+      } catch(err) {
+        console.error('媒体库加载失败:', err);
+        container.innerHTML = '<div style="text-align:center; padding:var(--spacing-xxl); color:#ef4444;"><i data-lucide="AlertCircle" style="font-size:2.5rem; margin-bottom:var(--spacing-md); display:inline-block;"></i><p>加载失败</p><p class="text-sm">' + (err.message || '未知错误') + '</p></div>';
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    async function handleMediaUpload(files) {
+      if (!files || files.length === 0) return;
+      if (typeof window.Appwrite === 'undefined' || !BUCKET_ID() || isPlaceholderConfig()) {
+        alert('上传功能需要先配置 Appwrite 云端存储');
+        return;
+      }
+      const input = document.getElementById('mediaUploadInput');
+      try {
+        const storage = new window.Appwrite.Storage(window.appwriteClient);
+        let successCount = 0, failCount = 0;
+        for (const file of files) {
+          if (!file.type.startsWith('image/')) { failCount++; continue; }
+          try {
+            await storage.createFile(BUCKET_ID(), 'unique(), file);
+            successCount++;
+          } catch(e) { failCount++; }
+        }
+        if (input) input.value = '';
+        if (successCount > 0) { showNotification('成功上传 ' + successCount + ' 张图片', 'success'); loadMediaLibrary(); }
+        if (failCount > 0) showNotification(failCount + ' 个文件上传失败', 'error');
+      } catch(err) {
+        alert('上传失败：' + (err.message || '未知错误'));
+      }
+    }
+
+    async function deleteMediaFile(fileId, fileName) {
+      if (!confirm('确定要删除 "' + fileName + '" 吗？此操作不可恢复。')) return;
+      try {
+        const storage = new window.Appwrite.Storage(window.appwriteClient);
+        await storage.deleteFile(BUCKET_ID(), fileId);
+        showNotification('已删除 ' + fileName, 'success');
+        loadMediaLibrary();
+      } catch(err) {
+        alert('删除失败：' + (err.message || '无权限或文件不存在'));
       }
     }
   </script>
