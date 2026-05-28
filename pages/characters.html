@@ -270,13 +270,6 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">角色分类</label>
-            <select class="form-input" id="charCategory">
-              <option value="">选择分类...</option>
-              <!-- 分类将通过JS动态加载 -->
-            </select>
-          </div>
-          <div class="form-group">
             <label class="form-label">性格标签</label>
             <input type="text" class="form-input" placeholder="用逗号分隔，如：勇敢,正义,善良">
           </div>
@@ -539,16 +532,6 @@
         console.error('加载世界观列表失败:', err);
       }
 
-      // 加载分类到下拉框
-      const categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || '[]');
-      const categorySelect = document.getElementById('charCategory');
-      
-      let options = '<option value="">选择分类...</option>';
-      categories.forEach(cat => {
-        options += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
-      });
-      categorySelect.innerHTML = options;
-      
       document.getElementById('createCharacterModal').classList.add('active');
     }
     
