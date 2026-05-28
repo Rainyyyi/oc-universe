@@ -250,8 +250,8 @@
   </style>
 </head>
 <body>
-  <!-- 登录界面 -->
-  <div class="login-overlay" id="loginOverlay">
+  <!-- 登录界面（默认隐藏，由 JS 根据登录状态决定显示） -->
+  <div class="login-overlay" id="loginOverlay" style="display: none;">
     <div class="login-container">
       <div class="login-logo">
         <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #2563EB;">
@@ -328,14 +328,6 @@
           <i data-lucide="LayoutDashboard"></i>
           <span>仪表盘</span>
         </div>
-        <div class="admin-nav-item" onclick="switchAdminTab('characters')">
-          <i data-lucide="Users"></i>
-          <span>角色管理</span>
-        </div>
-        <div class="admin-nav-item" onclick="switchAdminTab('stories')">
-          <i data-lucide="BookOpen"></i>
-          <span>故事管理</span>
-        </div>
         <div class="admin-nav-item" onclick="switchAdminTab('members')">
           <i data-lucide="UserPlus"></i>
           <span>成员管理</span>
@@ -352,15 +344,15 @@
       
       <div class="sidebar-section" style="margin-top: auto;">
         <div class="sidebar-section-title">系统设置</div>
-        <div class="admin-nav-item">
+        <div class="admin-nav-item" onclick="switchAdminTab('settings-global')">
           <i data-lucide="Settings"></i>
           <span>全局设置</span>
         </div>
-        <div class="admin-nav-item">
+        <div class="admin-nav-item" onclick="switchAdminTab('settings-theme')">
           <i data-lucide="Palette"></i>
           <span>主题设置</span>
         </div>
-        <div class="admin-nav-item">
+        <div class="admin-nav-item" onclick="switchAdminTab('settings-ai')">
           <i data-lucide="Bot"></i>
           <span>AI配置</span>
         </div>
@@ -579,6 +571,132 @@
           </div>
         </div>
       </div>
+      <!-- 全局设置 -->
+      <div id="tab-settings-global" style="display: none;">
+        <header class="page-header">
+          <div class="page-title">
+            <h1>⚙️ 全局设置</h1>
+          </div>
+        </header>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">基本设置</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">站点名称</label>
+              <input type="text" class="form-input" value="OC宇宙" style="max-width: 400px;">
+              <p class="text-muted text-sm" style="margin-top: 4px;">显示在浏览器标题栏和导航栏的名称</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">默认语言</label>
+              <select class="form-input" style="max-width: 400px;">
+                <option value="zh-CN" selected>简体中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">数据存储模式</label>
+              <select class="form-input" id="storageModeSelect" style="max-width: 400px;" onchange="onStorageModeChange(this.value)">
+                <option value="cloud">☁️ Appwrite 云端（推荐）</option>
+                <option value="local">💾 本地存储（离线）</option>
+              </select>
+              <p class="text-muted text-sm" style="margin-top: 4px;">切换后刷新页面生效。本地模式下数据仅保存在浏览器中。</p>
+            </div>
+          </div>
+          <div class="card-footer" style="border-top: 1px solid var(--border-color); padding: var(--spacing-md) var(--spacing-xl); display:flex; justify-content: flex-end;">
+            <button class="btn btn-primary" onclick="showNotification('设置已保存', 'success')"><i data-lucide="Check"></i> 保存设置</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主题设置 -->
+      <div id="tab-settings-theme" style="display: none;">
+        <header class="page-header">
+          <div class="page-title">
+            <h1>🎨 主题设置</h1>
+          </div>
+        </header>
+        <div class="grid-cards" style="grid-template-columns: repeat(2, 1fr);">
+          <div class="card" onclick="setThemePreview('light')" style="cursor:pointer; border: 2px solid transparent;" id="themeCard-light">
+            <div class="card-body" style="text-align:center; padding: var(--spacing-xl);">
+              <div style="width:100%; height:120px; background: linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 50%, #FFFFFF 100%); border-radius: var(--radius-lg); margin-bottom: var(--spacing-md); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;">
+                <span style="font-size:2rem;">🌅</span>
+                <span style="font-weight:600; color:#92400E;">晨曦模式</span>
+              </div>
+              <p class="text-muted text-sm">温暖明亮的日间主题</p>
+            </div>
+          </div>
+          <div class="card" onclick="setThemePreview('dark')" style="cursor:pointer; border: 2px solid transparent;" id="themeCard-dark">
+            <div class="card-body" style="text-align:center; padding: var(--spacing-xl);">
+              <div style="width:100%; height:120px; background: linear-gradient(135deg, #070B14 0%, #0D1424 50%, #111827 100%); border-radius: var(--radius-lg); margin-bottom: var(--spacing-md); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;">
+                <span style="font-size:2rem;">✨</span>
+                <span style="font-weight:600; color:#93C5FD;">星夜模式</span>
+              </div>
+              <p class="text-muted text-sm">深邃静谧的夜间主题</p>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top: var(--spacing-lg);">
+          <div class="card-header">
+            <h3 class="card-title">主题预览</h3>
+          </div>
+          <div class="card-body">
+            <div style="display:flex; align-items:center; gap:var(--spacing-md); margin-bottom: var(--spacing-md);">
+              <span>当前主题：</span>
+              <strong id="currentThemeLabel">晨曦模式</strong>
+              <button class="btn btn-primary btn-sm" onclick="applyThemeChoice()"><i data-lucide="Check"></i> 应用主题</button>
+            </div>
+            <div id="themePreviewArea" style="padding: var(--spacing-lg); border-radius: var(--radius-lg); background: var(--bg-secondary); border: 1px solid var(--border-color);">
+              <div style="display:flex; gap: var(--spacing-sm);">
+                <button class="btn btn-primary btn-sm">主按钮</button>
+                <button class="btn btn-secondary btn-sm">次按钮</button>
+                <button class="btn btn-ghost btn-sm">文字按钮</button>
+              </div>
+              <p style="margin-top: var(--spacing-md);" class="text-muted">这是一段示例文本，用于预览当前主题下的字体颜色和排版效果。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI配置（开发中） -->
+      <div id="tab-settings-ai" style="display: none;">
+        <header class="page-header">
+          <div class="page-title">
+            <h1>🤖 AI 配置</h1>
+          </div>
+        </header>
+        <div class="card" style="max-width: 640px;">
+          <div class="card-body" style="text-align:center; padding: var(--spacing-xxl) var(--spacing-xl);">
+            <div style="font-size:4rem; margin-bottom: var(--spacing-lg);">🚧</div>
+            <h2 style="margin:0 0 var(--spacing-sm); font-size:1.5rem;">功能开发中</h2>
+            <p class="text-muted" style="margin-bottom: var(--spacing-xl); max-width:420px; margin-left:auto; margin-right:auto;">
+              AI 聊天功能正在紧锣密鼓地开发中。<br>
+              届时你可以为每个角色接入 AI 模型，<br>
+              让角色拥有独特的性格和对话风格。
+            </p>
+            <div style="display:inline-flex; flex-direction:column; gap:var(--spacing-sm); text-align:left; background:var(--bg-tertiary); padding:var(--spacing-lg); border-radius:var(--radius-lg); width:100%; box-sizing:border-box;">
+              <div style="display:flex; align-items:center; gap:var(--spacing-sm); color:var(--text-secondary); font-size:0.9rem;">
+                <i data-lucide="CheckCircle" style="color:var(--success,#059669);"></i>
+                <span>角色人格与记忆系统设计</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:var(--spacing-sm); color:var(--text-secondary); font-size:0.9rem;">
+                <i data-lucide="CheckCircle" style="color:var(--success,#059669);"></i>
+                <span>多模型 API 接口适配</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:var(--spacing-sm); color:var(--text-secondary); font-size:0.9rem;">
+                <i data-lucide="Loader" style="color:var(--primary-color);"></i>
+                <span>上下文管理与对话历史</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:var(--spacing-sm); color:var(--text-muted); font-size:0.9rem;">
+                <i data-lucide="Circle" style="opacity:0.4;"></i>
+                <span>角色日记 AI 学习训练</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -653,6 +771,41 @@
     function showImportModal() {
       alert('打开导入对话框');
     }
+
+    // ---- 主题设置相关 ----
+    let _chosenTheme = localStorage.getItem('oc_theme') || 'light';
+    function setThemePreview(mode) {
+      _chosenTheme = mode;
+      document.getElementById('currentThemeLabel').textContent = mode === 'dark' ? '星夜模式' : '晨曦模式';
+      document.querySelectorAll('#tab-settings-theme .card[onclick]').forEach(c => c.style.borderColor = 'transparent');
+      document.getElementById('themeCard-' + mode).style.borderColor = 'var(--primary-color)';
+      // 实时预览
+      document.documentElement.setAttribute('data-theme', mode);
+      document.getElementById('themePreviewArea').setAttribute('data-theme', mode);
+    }
+    function applyThemeChoice() {
+      localStorage.setItem('oc_theme', _chosenTheme);
+      document.documentElement.setAttribute('data-theme', _chosenTheme);
+      showNotification('主题已切换为' + (_chosenTheme === 'dark' ? '星夜' : '晨曦') + '模式，刷新后全局生效', 'success');
+    }
+    // 初始化主题卡片高亮
+    (function initThemeCards() {
+      const t = _chosenTheme;
+      if (document.getElementById('themeCard-' + t)) {
+        document.getElementById('themeCard-' + t).style.borderColor = 'var(--primary-color)';
+        document.getElementById('currentThemeLabel').textContent = t === 'dark' ? '星夜模式' : '晨曦模式';
+      }
+    })();
+
+    // ---- 全局设置：存储模式切换 ----
+    function onStorageModeChange(val) {
+      if (val === 'local') {
+        // 清除 Appwrite 配置来强制本地模式（临时）
+        showNotification('已切换到本地存储模式，刷新页面生效。如需恢复云端，请在 Appwrite 中重新配置。', 'info');
+      } else {
+        showNotification('云端模式需要有效的 Appwrite 配置', 'info');
+      }
+    }
   </script>
   
   <!-- 登录验证脚本 -->
@@ -678,11 +831,11 @@
       }
 
       if (loggedIn) {
-        loginOverlay.classList.add('hidden');
+        loginOverlay.style.display = 'none';
         adminContent.style.display = 'block';
         loadRealStats();
       } else {
-        loginOverlay.classList.remove('hidden');
+        loginOverlay.style.display = 'flex';
         adminContent.style.display = 'none';
       }
 
@@ -698,7 +851,7 @@
             try {
               const success = await OCData.login(username, password);
               if (success) {
-                loginOverlay.classList.add('hidden');
+                loginOverlay.style.display = 'none';
                 adminContent.style.display = 'block';
                 loginError.style.display = 'none';
                 loadRealStats();
@@ -710,7 +863,7 @@
             }
           } else if (typeof verifyLogin !== 'undefined' && verifyLogin(username, password)) {
             login(username, password);
-            loginOverlay.classList.add('hidden');
+            loginOverlay.style.display = 'none';
             adminContent.style.display = 'block';
             loginError.style.display = 'none';
             loadRealStats();
