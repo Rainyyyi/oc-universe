@@ -405,15 +405,20 @@
     document.addEventListener('DOMContentLoaded', async function() {
       // 初始化主题
       initTheme();
-      
+
       // 初始化 Appwrite 数据模式（检测登录状态）
       await OCData.initDataMode();
-      
+
       // 更新登录按钮状态
       await updateAuthUI();
-      
+
       // 加载世界观
       await loadWorlds();
+
+      // 全局图标渲染兜底（所有动态内容加载完毕后）
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+      setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 200);
+      setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 500);
     });
     
     // 更新导航栏用户状态
@@ -422,12 +427,12 @@
       const userBtn = document.getElementById('userInfoBtn');
       const loginBtn = group?.querySelector('.btn-secondary');
       const nameSpan = document.getElementById('userNameDisplay');
-      
+
       if (!group) return;
       group.style.display = 'flex';
       group.style.gap = '8px';
       group.style.alignItems = 'center';
-      
+
       const loggedIn = await OCData.isLoggedIn();
       if (loggedIn) {
         const user = await AppwriteAuth.getCurrentUser().catch(() => null);
@@ -437,13 +442,39 @@
           loginBtn.innerHTML = '<i data-lucide="LogOut"></i><span>退出</span>';
           loginBtn.onclick = doLogout;
         }
+        // 显示已登录状态：页面标题区展示用户名
+        showLoggedInState(user);
       } else {
         if (userBtn) userBtn.style.display = 'none';
         if (loginBtn) {
           loginBtn.innerHTML = '<i data-lucide="LogIn"></i><span>登录</span>';
           loginBtn.onclick = showLoginModal;
         }
+        // 隐藏已登录状态标识
+        hideLoggedInState();
       }
+      // 修改 DOM 后必须重渲染图标
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    }
+
+    // 显示已登录的用户标识（让用户明确知道自己已登录）
+    function showLoggedInState(user) {
+      let el = document.getElementById('loggedInBanner');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'loggedInBanner';
+        el.style.cssText = 'background:var(--bg-tertiary);border-radius:var(--radius-md);padding:var(--spacing-sm) var(--spacing-md);margin-bottom:var(--spacing-md);display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-light);';
+        const header = document.querySelector('.page-header');
+        if (header) header.after(el);
+      }
+      const name = (user && (user.name || user.email)) || '用户';
+      el.innerHTML = '<span style="color:var(--text-secondary);font-size:0.9rem;"><i data-lucide="UserCheck" style="width:1rem;height:1rem;display:inline;vertical-align:-2px;margin-right:4px;"></i>已登录为 <strong style="color:var(--text-primary);">' + name + '</strong></span>';
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    }
+
+    function hideLoggedInState() {
+      const el = document.getElementById('loggedInBanner');
+      if (el) el.remove();
     }
     
     // 加载并渲染世界观列表
@@ -776,6 +807,7 @@
     async function doLogout() {
       await OCData.logout();
       showNotification('已退出登录', 'info');
+      hideLoggedInState();
       await updateAuthUI();
       await loadWorlds();
     }
@@ -800,12 +832,20 @@
       const password = document.getElementById('authPassword').value;
       if (!email || !password) { showNotification('请填写邮箱和密码', 'warning'); return; }
       try {
-        await OCData.login(email, password);
+        const result = await OCData.login(email, password);
+        if (!result) {
+          showNotification('登录失败：账号或密码不正确', 'error');
+          return;
+        }
         closeModal('authModal');
         showNotification('登录成功', 'success');
+        // 刷新整个页面状态
         await updateAuthUI();
         await loadWorlds();
+        // 重新渲染 lucide（登录后 DOM 变化大）
+        setTimeout(function() { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, 100);
       } catch (e) {
+        console.error('doLogin 异常:', e);
         showNotification('登录失败：' + (e.message || '请检查账号密码'), 'error');
       }
     }
