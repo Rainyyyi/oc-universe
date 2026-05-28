@@ -458,10 +458,10 @@
 
       // 更新侧边栏角色列表
       renderCharacterFilterList();
-      // 渲染图谱
-      renderGraph();
       // 填充添加关系的角色下拉框
       populateRelationCharSelects();
+      // 渲染图谱（延迟确保 DOM 布局完成）
+      requestAnimationFrame(() => renderGraph());
     }
 
     // ==================== 角色侧边栏列表 ====================
@@ -545,8 +545,12 @@
 
       closeModal('addRelationModal');
       showNotification('关系添加成功', 'success');
-      loadRelationsFromStorage();
-      renderGraph();
+
+      // 等模态框动画结束后再重新渲染（否则容器尺寸可能不对）
+      setTimeout(() => {
+        loadRelationsFromStorage();
+        renderGraph();
+      }, 300);
     }
 
     // 显示添加关系模态框 + 填充角色选项
@@ -682,7 +686,14 @@
     }
 
     function renderGraph() {
-      if (!chart) return;
+      if (!chart) {
+        // chart 未初始化，尝试重新初始化
+        try { initGraph(); } catch(e) { console.error('initGraph failed:', e); return; }
+        if (!chart) return;
+      }
+
+      // 确保容器有正确尺寸（模态框关闭后容器可能塌陷）
+      chart.resize();
 
       // 构建节点
       const nodes = _allCharacters.map((c, i) => ({
@@ -696,6 +707,13 @@
         y: Math.random() * 500
       }));
 
+      // 无节点时显示空状态提示
+      if (nodes.length === 0) {
+        chart.setOption({ series: [{ data: [], links: [] }] });
+        updateLegend([]);
+        return;
+      }
+
       // 获取启用的关系类型
       const enabledTypes = new Set();
       document.querySelectorAll('#relationTypeFilters input[type="checkbox"]:checked').forEach(cb => {
@@ -706,7 +724,7 @@
       const links = _allRelations.filter(r => !r.typeId || enabledTypes.has(r.typeId)).map(r => ({
         source: r.sourceId,
         target: r.targetId,
-        lineStyle: { color: r.color || '#5470c6', width: Math.max(1, r.strength / 25) },
+        lineStyle: { color: r.color || '#5470c6', width: Math.max(1.5, r.strength / 25) },
         value: r.strength,
         label: { show: false, formatter: r.typeName || r.description || '' }
       }));
@@ -714,9 +732,34 @@
       // 图例更新
       updateLegend(_allRelations);
 
-      chart.setOption({
-        series: [{ data: nodes, links: links }]
-      }, true);
+      // 用 merge 模式更新数据（不破坏力导向模拟）
+      // force 布局必须用 merge，否则力模拟会丢失导致白屏
+      try {
+        chart.setOption({
+          series: [{
+            data: nodes,
+            links: links,
+            animation: true,
+            animationDuration: 500,
+            animationEasingUpdate: 'cubicOut'
+          }]
+        });
+      } catch(err) {
+        console.error('renderGraph setOption error:', err);
+        // fallback: 完全重建图表
+        try {
+          chart.dispose();
+          initGraph();
+          chart.setOption({
+            series: [{ data: nodes, links: links }]
+          });
+        } catch(e2) {
+          console.error('fallback init also failed:', e2);
+        }
+      }
+
+      // 延迟一次 resize 确保渲染完成后的布局正确
+      setTimeout(() => { if (chart) chart.resize(); }, 100);
     }
 
     function updateLegend(relations) {
