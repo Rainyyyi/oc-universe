@@ -415,10 +415,10 @@
       <div id="tab-dashboard">
         <header class="page-header" style="border-bottom: none; margin-bottom: var(--spacing-lg);">
           <div class="page-title">
-            <h1>👑 管理后台</h1>
+            <h1>管理后台</h1>
           </div>
           <div class="page-actions">
-            <button class="btn btn-secondary">
+            <button class="btn btn-secondary" onclick="loadRealStats()">
               <i data-lucide="RefreshCw"></i>
               刷新数据
             </button>
@@ -459,7 +459,7 @@
           <!-- 快捷操作 -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">⚡ 快捷操作</h3>
+              <h3 class="card-title">快捷操作</h3>
             </div>
             <div class="card-body">
               <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacing-md);">
@@ -487,11 +487,11 @@
                   <i data-lucide="GitBranch"></i>
                   <span class="text-sm">关系图谱</span>
                 </div>
-                <div class="quick-action">
+                <div class="quick-action" onclick="goToChat()">
                   <i data-lucide="Brain"></i>
                   <span class="text-sm">训练AI</span>
                 </div>
-                <div class="quick-action">
+                <div class="quick-action" onclick="switchAdminTab('stats-inline', event)">
                   <i data-lucide="BarChart3"></i>
                   <span class="text-sm">数据统计</span>
                 </div>
@@ -502,7 +502,7 @@
           <!-- AI学习进度 -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">🤖 AI学习进度</h3>
+              <h3 class="card-title">AI 学习进度</h3>
             </div>
             <div class="card-body" id="aiProgressList">
               <div class="empty-state" style="padding: var(--spacing-lg); text-align: center; color: var(--text-muted);">
@@ -516,7 +516,7 @@
         <!-- 最近活动 -->
         <div class="card" style="margin-top: var(--spacing-xl);">
           <div class="card-header">
-            <h3 class="card-title">📋 最近活动</h3>
+            <h3 class="card-title">最近活动</h3>
           </div>
           <div class="card-body" style="padding: 0;" id="activityList">
             <div class="empty-state" style="padding: var(--spacing-xl); text-align: center; color: var(--text-muted);">
@@ -531,7 +531,7 @@
       <div id="tab-members" style="display: none;">
         <header class="page-header">
           <div class="page-title">
-            <h1>👥 成员管理</h1>
+            <h1>成员管理</h1>
           </div>
           <div class="page-actions">
             <button class="btn btn-primary">
@@ -562,7 +562,7 @@
         <div class="grid-cards">
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">📤 导出数据</h3>
+              <h3 class="card-title">导出数据</h3>
             </div>
             <div class="card-body">
               <p class="text-muted" style="margin-bottom: var(--spacing-lg);">将所有数据导出为JSON文件，可用于备份或迁移。</p>
@@ -571,11 +571,11 @@
                   <i data-lucide="Download"></i>
                   导出全部数据
                 </button>
-                <button class="btn btn-secondary">
+                <button class="btn btn-secondary" onclick="exportCharacters()">
                   <i data-lucide="FileCode"></i>
                   仅导出角色
                 </button>
-                <button class="btn btn-secondary">
+                <button class="btn btn-secondary" onclick="exportStories()">
                   <i data-lucide="BookOpen"></i>
                   仅导出故事
                 </button>
@@ -585,14 +585,15 @@
 
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">📥 导入数据</h3>
+              <h3 class="card-title">导入数据</h3>
             </div>
             <div class="card-body">
               <p class="text-muted" style="margin-bottom: var(--spacing-lg);">从JSON文件导入数据，可选择覆盖或合并现有数据。</p>
-              <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: var(--spacing-xl); text-align: center; cursor: pointer;">
+              <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: var(--spacing-xl); text-align: center; cursor: pointer;" onclick="document.getElementById('backupFileInput').click()">
                 <i data-lucide="CloudUpload" style="font-size: 2rem; color: var(--text-muted); margin-bottom: var(--spacing-md);"></i>
                 <p class="text-muted">点击或拖拽文件到此处</p>
                 <p class="text-sm text-muted">支持 .json 格式</p>
+                <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none;" onchange="handleBackupImport(this.files)">
               </div>
             </div>
           </div>
@@ -600,7 +601,7 @@
 
         <div class="card" style="margin-top: var(--spacing-xl);">
           <div class="card-header">
-            <h3 class="card-title">📜 备份历史</h3>
+            <h3 class="card-title">备份历史</h3>
           </div>
           <div class="card-body">
             <table>
@@ -625,7 +626,7 @@
       <div id="tab-media" style="display: none;">
         <header class="page-header">
           <div class="page-title">
-            <h1>🖼️ 媒体库</h1>
+            <h1>媒体库</h1>
           </div>
           <div class="page-actions">
             <label class="btn btn-primary btn-sm" style="cursor:pointer;">
@@ -652,13 +653,14 @@
       <div id="tab-settings-ai" style="display: none;">
         <header class="page-header">
           <div class="page-title">
-            <h1>🤖 AI 配置</h1>
+            <h1>AI 配置</h1>
           </div>
         </header>
         <div class="card" style="max-width: 640px;">
           <div class="card-body" style="text-align:center; padding: var(--spacing-xxl) var(--spacing-xl);">
-            <div style="font-size:4rem; margin-bottom: var(--spacing-lg);">🚧</div>
-            <h2 style="margin:0 0 var(--spacing-sm); font-size:1.5rem;">功能开发中</h2>
+            <div style="font-size:4rem; margin-bottom: var(--spacing-lg); opacity:0.3;">
+              <i data-lucide="HardHat" style="width:1em;height:1em;"></i>
+            </div><h2 style="margin:0 0 var(--spacing-sm); font-size:1.5rem;">功能开发中</h2>
             <p class="text-muted" style="margin-bottom: var(--spacing-xl); max-width:420px; margin-left:auto; margin-right:auto;">
               AI 聊天功能正在紧锣密鼓地开发中。<br>
               届时你可以为每个角色接入 AI 模型，<br>
@@ -710,6 +712,9 @@
       document.getElementById('statStories').textContent = stats.stories;
       const words = stats.totalWords;
       document.getElementById('statWords').textContent = words >= 1000 ? (words / 1000).toFixed(1) + 'K' : words;
+      // 同时刷新 AI 学习进度和最近活动
+      loadAIProgress();
+      loadRecentActivity();
     }
     
     // 切换管理标签页
@@ -745,32 +750,241 @@
 
       // 媒体库 tab 自动加载
       if (tab === 'media') loadMediaLibrary();
+      // 成员管理 tab 自动加载
+      if (tab === 'members') loadMemberList();
+      // 备份 tab 加载历史
+      if (tab === 'backup') renderBackupHistory();
     }
     
-    // 导出全部数据
-    function exportAll() {
-      const data = {
-        exportTime: new Date().toISOString(),
-        worlds: getWorlds(),
-        characters: getCharacters(),
-        stories: getStories(),
-        relations: getRelations()
-      };
-      
+    // ---- 导出功能 ----
+    function getWorlds() { try { return JSON.parse(localStorage.getItem('oc_worlds') || '[]'); } catch { return []; } }
+    function getCharacters() { try { return JSON.parse(localStorage.getItem('oc_characters') || '[]'); } catch { return []; } }
+    function getStories() { try { return JSON.parse(localStorage.getItem('oc_stories') || '[]'); } catch { return []; } }
+    function getRelations() { try { return JSON.parse(localStorage.getItem('oc_relations') || '[]'); } catch { return []; } }
+
+    function downloadJSON(data, filename) {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = `oc-universe-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = filename;
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
-      
-      alert('数据导出成功！');
     }
-    
-    // 显示导入模态框
+
+    function recordBackupHistory(type, size) {
+      const history = JSON.parse(localStorage.getItem('oc_backup_history') || '[]');
+      history.unshift({ time: new Date().toISOString(), type, size, id: 'bk_' + Date.now() });
+      localStorage.setItem('oc_backup_history', JSON.stringify(history.slice(0, 20))); // 最多保留20条
+      renderBackupHistory();
+    }
+
+    function renderBackupHistory() {
+      const tbody = document.getElementById('backupHistoryBody');
+      if (!tbody) return;
+      const history = JSON.parse(localStorage.getItem('oc_backup_history') || '[]');
+      if (history.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:var(--spacing-lg);">暂无备份记录</td></tr>'; return; }
+      tbody.innerHTML = history.map(h => {
+        const d = new Date(h.time);
+        const timeStr = `${d.getMonth()+1}-${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        return `<tr><td>${timeStr}</td><td>${h.type}</td><td>${h.size}</td><td><button class="btn btn-ghost btn-sm" onclick="showNotification(\'备份记录仅作展示\')" title="查看">详情</button></td></tr>`;
+      }).join('');
+    }
+
+    function exportAll() {
+      const data = { exportTime: new Date().toISOString(), worlds: getWorlds(), characters: getCharacters(), stories: getStories(), relations: getRelations() };
+      downloadJSON(data, `oc-universe-full-${new Date().toISOString().split('T')[0]}.json`);
+      recordBackupHistory('全量导出', formatSize(JSON.stringify(data).length));
+      showNotification('全量数据导出成功', 'success');
+    }
+
+    function exportCharacters() {
+      const data = { exportTime: new Date().toISOString(), characters: getCharacters() };
+      downloadJSON(data, `oc-characters-${new Date().toISOString().split('T')[0]}.json`);
+      recordBackupHistory('角色导出', formatSize(JSON.stringify(data).length));
+      showNotification('角色数据导出成功', 'success');
+    }
+
+    function exportStories() {
+      const data = { exportTime: new Date().toISOString(), stories: getStories() };
+      downloadJSON(data, `oc-stories-${new Date().toISOString().split('T')[0]}.json`);
+      recordBackupHistory('故事导出', formatSize(JSON.stringify(data).length));
+      showNotification('故事数据导出成功', 'success');
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / 1048576).toFixed(1) + 'MB';
+    }
+
+    // ---- 导入功能 ----
     function showImportModal() {
-      alert('打开导入对话框');
+      document.getElementById('backupFileInput').click();
+    }
+
+    async function handleBackupImport(files) {
+      if (!files || files.length === 0) return;
+      const file = files[0];
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        let imported = 0;
+        if (data.worlds && Array.isArray(data.worlds)) {
+          const existing = getWorlds();
+          const merged = [...existing];
+          data.worlds.forEach(w => { if (!merged.find(e => (e.$id||e.id) === (w.$id||w.id))) merged.push(w); });
+          localStorage.setItem('oc_worlds', JSON.stringify(merged));
+          imported += data.worlds.length;
+        }
+        if (data.characters && Array.isArray(data.characters)) {
+          const existing = getCharacters();
+          const merged = [...existing];
+          data.characters.forEach(c => { if (!merged.find(e => (e.$id||e.id) === (c.$id||c.id))) merged.push(c); });
+          localStorage.setItem('oc_characters', JSON.stringify(merged));
+          imported += data.characters.length;
+        }
+        if (data.stories && Array.isArray(data.stories)) {
+          const existing = getStories();
+          const merged = [...existing];
+          data.stories.forEach(s => { if (!merged.find(e => (e.$id||e.id) === (s.$id||s.id))) merged.push(s); });
+          localStorage.setItem('oc_stories', JSON.stringify(merged));
+          imported += data.stories.length;
+        }
+        recordBackupHistory('导入', formatSize(text.length));
+        showNotification(`导入成功，新增 ${imported} 条数据（合并模式，不覆盖已有）`, 'success');
+        loadRealStats(); // 刷新统计数据
+        // 刷新文件 input
+        const input = document.getElementById('backupFileInput');
+        if (input) input.value = '';
+      } catch(err) {
+        showNotification('导入失败：文件格式错误或不是有效的 JSON', 'error');
+      }
+    }
+
+    // ---- 导航跳转 ----
+    function goToChat() {
+      showNotification('正在前往 AI 聊天...', 'info');
+      setTimeout(() => { window.location.href = 'chat.html'; }, 300);
+    }
+
+    // ---- AI 学习进度（用真实角色数据填充）----
+    async function loadAIProgress() {
+      const container = document.getElementById('aiProgressList');
+      if (!container) return;
+      let chars;
+      try { chars = await OCData.getCharacters().catch(() => []); } catch { chars = []; }
+      chars = chars || [];
+      if (chars.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="padding: var(--spacing-lg); text-align: center; color: var(--text-muted);">
+          <p>暂无角色数据</p>
+          <p class="text-sm">创建角色后会自动显示学习进度</p></div>`;
+        return;
+      }
+      container.innerHTML = chars.map(c => {
+        const desc = (c.description || '').length;
+        const tags = (c.tags || '').length;
+        const score = Math.min(100, Math.round((desc * 2 + tags * 5) / 3));
+        const color = score > 60 ? '#059669' : score > 30 ? '#D97706' : '#64748B';
+        return `<div style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-weight:500;">${esc(c.name || '未命名')}</span>
+            <span class="text-sm" style="color:${color};">${score}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${score}%;background:linear-gradient(90deg,${color},${color}dd);"></div></div>
+        </div>`;
+      }).join('');
+    }
+
+    // ---- 最近活动（从数据时间戳生成）----
+    async function loadRecentActivity() {
+      const container = document.getElementById('activityList');
+      if (!container) return;
+      let activities = [];
+
+      // 从各数据源收集活动记录
+      try {
+        const worlds = await OCData.getWorlds().catch(() => []);
+        (worlds || []).forEach(w => {
+          if (w.$createdAt) activities.push({ icon: 'Globe', name: `创建世界观「${w.name || '未命名'}」`, time: w.$createdAt, color: '#60A5FA' });
+        });
+      } catch {}
+      try {
+        const chars = await OCData.getCharacters().catch(() => []);
+        (chars || []).forEach(c => {
+          if (c.$createdAt) activities.push({ icon: 'User', name: `创建角色「${c.name || '未命名'}」`, time: c.$createdAt, color: '#A78BFA' });
+        });
+      } catch {}
+      try {
+        const stories = await OCData.getStories().catch(() => []);
+        (stories || []).forEach(s => {
+          if (s.$createdAt) activities.push({ icon: 'BookOpen', name: `${s.status === 'completed' ? '完成' : '创建'}故事「${s.title || '未命名'}」`, time: s.$createdAt, color: '#34D399' });
+        });
+      } catch {}
+
+      // 按时间倒序
+      activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+      activities = activities.slice(0, 10);
+
+      if (activities.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="padding: var(--spacing-xl); text-align: center; color: var(--text-muted);">
+          <p>暂无活动记录</p>
+          <p class="text-sm">创建角色、故事或开始聊天后会显示活动</p></div>`;
+        return;
+      }
+      container.innerHTML = activities.map(a => {
+        const d = new Date(a.time);
+        const timeStr = `${d.getMonth()+1}-${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        return `<div class="activity-item">
+          <div class="activity-icon" style="background:${a.color}22;color:${a.color};">
+            <i data-lucide="${a.icon}" style="width:1rem;height:1rem;"></i>
+          </div>
+          <div style="flex:1;"><p style="margin:0;font-size:0.9rem;">${a.name}</p><p class="text-xs text-muted" style="margin-top:2px;">${timeStr}</p></div>
+        </div>`;
+      }).join('');
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    }
+
+    // 成员管理 tab 显示角色列表
+    async function loadMemberList() {
+      const card = document.querySelector('#tab-members .card-body');
+      if (!card) return;
+      let chars;
+      try { chars = await OCData.getCharacters().catch(() => []); } catch { chars = []; }
+      if (!chars || chars.length === 0) {
+        card.innerHTML = `<div class="empty-state" style="padding: var(--spacing-xl); text-align: center; color: var(--text-muted);">
+          <p>暂无角色数据</p>
+          <p class="text-sm">创建的角色会显示在这里</p></div>`;
+        return;
+      }
+      card.innerHTML = `<div style="display:flex;flex-direction:column;gap:var(--spacing-md);">${chars.map(c =>
+        `<div class="member-item">
+          <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--primary-color);font-size:1rem;">${(c.name || '?')[0]}</div>
+          <div style="flex:1;">
+            <div style="font-weight:500;">${esc(c.name || '未命名')}</div>
+            <div class="text-sm text-muted">${c.gender || ''} ${(c.age || '') ? ' · ' + c.age : ''}${c.tags ? ' · ' + esc(c.tags) : ''}</div>
+          </div>
+          <span class="tag" style="background:var(--primary-color);color:#fff;font-size:0.75rem;">角色</span>
+        </div>`
+      ).join('')}</div>`;
+    }
+
+    // 工具函数
+    function esc(str) {
+      const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+    }
+
+    // 通知
+    function showNotification(msg, type) {
+      if (typeof window.showNotification === 'function' && window.showNotification !== showNotification) {
+        window.showNotification(msg, type); return;
+      }
+      // fallback toast
+      let t = document.getElementById('_adminToast');
+      if (!t) { t = document.createElement('div'); t.id = '_adminToast'; t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:8px;z-index:99999;font-size:0.9rem;transition:opacity .3s;opacity:0;pointer-events:none;'; document.body.appendChild(t); }
+      const c = { success:'#059669', error:'#dc2626', warning:'#d97706', info:'#2563eb' };
+      t.style.background = c[type] || c.info; t.style.color='#fff'; t.textContent = msg; t.style.opacity='1';
+      clearTimeout(t._timer); t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
     }
 
     // ---- 媒体库（Appwrite Storage）----
