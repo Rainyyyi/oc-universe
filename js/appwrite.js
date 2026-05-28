@@ -13,7 +13,7 @@
 
 // ==================== 配置（修改这里）====================
 const APPWRITE_CONFIG = {
-  endpoint: 'https://cloud.appwrite.io/v1',
+  endpoint: 'https://sgp.cloud.appwrite.io/v1',
   projectId: 'oc-universe',
   databaseId: 'oc-universe',
   bucketId: 'oc-media',
