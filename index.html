@@ -333,6 +333,21 @@
     </div>
   </div>
 
+  <!-- 世界观数据详情模态框 -->
+  <div class="modal-overlay" id="worldDetailModal">
+    <div class="modal" style="max-width:680px;max-height:85vh;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i data-lucide="Globe" style="width:1.2rem;height:1.2rem;display:inline;vertical-align:-3px;"></i> 世界观详情</h3>
+        <button class="modal-close" onclick="closeModal('worldDetailModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="worldDetailBody" style="max-height:65vh;overflow-y:auto;padding:var(--spacing-lg);">
+        <!-- 动态内容 -->
+      </div>
+    </div>
+  </div>
+
   <!-- 导入模态框 -->
   <div class="modal-overlay" id="importModal">
     <div class="modal">
@@ -442,39 +457,116 @@
           loginBtn.innerHTML = '<i data-lucide="LogOut"></i><span>退出</span>';
           loginBtn.onclick = doLogout;
         }
-        // 显示已登录状态：页面标题区展示用户名
-        showLoggedInState(user);
       } else {
         if (userBtn) userBtn.style.display = 'none';
         if (loginBtn) {
           loginBtn.innerHTML = '<i data-lucide="LogIn"></i><span>登录</span>';
           loginBtn.onclick = showLoginModal;
         }
-        // 隐藏已登录状态标识
-        hideLoggedInState();
       }
       // 修改 DOM 后必须重渲染图标
       try { if (window.lucide) lucide.createIcons(); } catch(e) {}
     }
 
-    // 显示已登录的用户标识（让用户明确知道自己已登录）
-    function showLoggedInState(user) {
-      let el = document.getElementById('loggedInBanner');
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'loggedInBanner';
-        el.style.cssText = 'background:var(--bg-tertiary);border-radius:var(--radius-md);padding:var(--spacing-sm) var(--spacing-md);margin-bottom:var(--spacing-md);display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-light);';
-        const header = document.querySelector('.page-header');
-        if (header) header.after(el);
-      }
-      const name = (user && (user.name || user.email)) || '用户';
-      el.innerHTML = '<span style="color:var(--text-secondary);font-size:0.9rem;"><i data-lucide="UserCheck" style="width:1rem;height:1rem;display:inline;vertical-align:-2px;margin-right:4px;"></i>已登录为 <strong style="color:var(--text-primary);">' + name + '</strong></span>';
-      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
-    }
+    // 显示世界觽数据详情
+    async function showWorldDetail(worldId) {
+      const modal = document.getElementById('worldDetailModal');
+      const body = document.getElementById('worldDetailBody');
+      if (!modal || !body) return;
 
-    function hideLoggedInState() {
-      const el = document.getElementById('loggedInBanner');
-      if (el) el.remove();
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i data-lucide="Loader2" class="spin" style="width:2rem;height:2rem;"></i><p style="margin-top:12px;">加载中...</p></div>';
+      modal.classList.add('active');
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+
+      try {
+        // 并行加载世界观数据和角色列表
+        const [world, characters] = await Promise.all([
+          OCData.getWorld(worldId),
+          OCData.getCharactersByWorld(worldId).catch(() => [])
+        ]);
+
+        const typeLabels = { fantasy:'奇幻', scifi:'科幻', modern:'现代', historical:'古风', other:'其他' };
+        const toneLabels = { dark:'黑暗', light:'温馨', neutral:'中性', mixed:'明暗交织' };
+
+        let html = '';
+        // 世界观基本信息卡片
+        html += `<div style="margin-bottom:var(--spacing-lg);">`;
+        if (world.coverImage) {
+          html += `<div style="border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--spacing-md);max-height:200px;"><img src="${world.coverImage}" style="width:100%;height:auto;object-fit:cover;" alt="${world.name||''}封面"></div>`;
+        }
+        html += `<h2 style="margin:0 0 var(--spacing-sm);font-size:1.5rem;">${world.name || '未命名世界'}</h2>`;
+
+        // 标签行
+        const badges = [];
+        if (world.type) badges.push(`<span class="badge">${typeLabels[world.type] || world.type}</span>`);
+        if (world.tone) badges.push(`<span class="badge badge-secondary">${toneLabels[world.tone] || world.tone}</span>`);
+        if (badges.length) html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--spacing-md);">${badges.join('')}</div>`;
+
+        // 描述/背景
+        if (world.description) {
+          html += `<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:var(--spacing-md);line-height:1.8;color:var(--text-secondary);">
+            <h4 style="margin:0 0 var(--spacing-xs);font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;"><i data-lucide="ScrollText" style="width:0.9rem;height:0.9rem;display:inline;vertical-align:-2px;"></i> 背景设定</h4>
+            <p style="margin:0;white-space:pre-wrap;">${world.description}</p>
+          </div>`;
+        } else {
+          html += `<p style="color:var(--text-muted);font-style:italic;">暂无背景描述</p>`;
+        }
+        html += `</div>`;
+
+        // 关联角色列表
+        html += `<div>
+          <h3 style="margin:0 0 var(--spacing-md);font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+            <i data-lucide="Users" style="width:1.1rem;height:1.1rem;color:var(--primary-color);"></i>
+            角色列表 <span class="badge" style="font-size:0.75rem;">${characters.length}</span>
+          </h3>`;
+
+        if (characters.length > 0) {
+          html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--spacing-sm);">`;
+          for (const c of characters) {
+            const avatar = c.avatar || '';
+            const roleTag = c.role ? `<span class="badge badge-secondary" style="font-size:0.7rem;">${c.role}</span>` : '';
+            html += `<div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:var(--spacing-sm);cursor:pointer;border:1px solid var(--border-color);" onclick="window.location.href='pages/characters.html?worldId=${worldId}&charId=${c.$id || c.id}'">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                ${avatar
+                  ? `<img src="${avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" alt="">`
+                  : `<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;"><i data-lucide="User" style="width:18px;height:18px;color:var(--primary-color);"></i></div>`}
+                <div style="min-width:0;flex:1;">
+                  <div style="font-weight:600;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name || '未命名角色'}</div>
+                  ${roleTag}
+                </div>
+              </div>
+              ${(c.personality || c.brief) ? `<p style="margin:0;font-size:0.8rem;color:var(--text-muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${c.personality || c.brief}</p>` : ''}
+            </div>`;
+          }
+          html += `</div>`;
+        } else {
+          html += `<div style="text-align:center;padding:30px;background:var(--bg-tertiary);border-radius:var(--radius-md);color:var(--text-muted);border:2px dashed var(--border-color);">
+            <i data-lucide="UserPlus" style="width:2rem;height:2rem;margin-bottom:8px;opacity:0.5;"></i>
+            <p style="margin:0 0 8px;">这个世界观还没有角色</p>
+            <a href="pages/characters.html?worldId=${worldId}" class="btn btn-primary btn-sm" onclick="closeModal('worldDetailModal')">
+              <i data-lucide="Plus" style="width:0.85rem;height:0.85rem;"></i> 添加第一个角色
+            </a>
+          </div>`;
+        }
+
+        html += `</div>`;
+
+        // 底部操作栏
+        html += `<div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm);margin-top:var(--spacing-lg);padding-top:var(--spacing-md);border-top:1px solid var(--border-color);">
+          <button class="btn btn-primary btn-sm" onclick="closeModal('worldDetailModal');editWorld('${worldId}')">
+            <i data-lucide="Edit"></i> 编辑世界观
+          </button>
+          <a href="pages/characters.html?worldId=${worldId}" class="btn btn-secondary btn-sm" onclick="closeModal('worldDetailModal')">
+            <i data-lucide="Users"></i> 管理角色
+          </a>
+        </div>`;
+
+        body.innerHTML = html;
+      } catch (err) {
+        console.error('加载世界观数据失败:', err);
+        body.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);"><i data-lucide="AlertCircle" style="width:2rem;height:2rem;"></i><p style="margin-top:12px;">加载失败：${err.message}</p></div>`;
+      }
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
     }
     
     // 加载并渲染世界观列表
@@ -544,7 +636,7 @@
         const toneLabels = { dark:'黑暗', light:'温馨', neutral:'中性', mixed:'明暗交织' };
         
         container.innerHTML = worlds.map(w => `
-          <div class="card" style="cursor:pointer;" onclick="window.location.href='pages/characters.html?worldId=${w.$id || w.id}'">
+          <div class="card" style="cursor:pointer;" onclick="showWorldDetail('${w.$id || w.id}')">
             <div class="card-cover" style="height:140px;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius-md) var(--radius-md) 0 0;">
               ${w.coverImage
                 ? `<img src="${w.coverImage}" style="width:100%;height:100%;object-fit:cover;" alt="封面">`
@@ -807,7 +899,6 @@
     async function doLogout() {
       await OCData.logout();
       showNotification('已退出登录', 'info');
-      hideLoggedInState();
       await updateAuthUI();
       await loadWorlds();
     }
