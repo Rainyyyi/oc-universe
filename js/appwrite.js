@@ -62,21 +62,76 @@ if (isPlaceholderConfig()) {
 const SESSION_KEY = 'appwrite_session_secret';
 
 /**
+ * 获取已保存的 JWT（从 localStorage）
+ */
+function getSavedJWT() {
+  return localStorage.getItem(SESSION_KEY) || null;
+}
+
+/**
+ * 全局 fetch 拦截器：确保所有发往 Appwrite API 的请求都带 Authorization header。
+ * 这是最可靠的认证方式——绕过 SDK 内部可能存在的 setJWT() 不生效问题，
+ * 直接在网络请求层面注入凭证。
+ *
+ * 原理：Tracking Prevention 会拦截跨域 Cookie，导致 session cookie 无法在
+ * oc-universe.appwrite.network ↔ sgp.cloud.appwrite.io 之间传递。
+ * 但 Authorization header 是 HTTP 请求的一部分，不受 Cookie 策略影响。
+ */
+function installFetchInterceptor() {
+  if (window._appwriteFetchPatched) return;
+  const originalFetch = window.fetch;
+  const apiOrigin = (APPWRITE_CONFIG.endpoint || '').replace(/\/v1$/, '').replace(/\/+$/, '');
+
+  window.fetch = async function(...args) {
+    let [url, options] = args;
+    // 把 Request 对象转为字符串方便判断
+    const urlStr = typeof url === 'string' ? url : (url.url || '');
+
+    // 只拦截发往 Appwrite API 的请求
+    if (urlStr.includes('cloud.appwrite.io') || urlStr.includes(apiOrigin)) {
+      const jwt = getSavedJWT();
+      if (jwt) {
+        options = options || {};
+        options.headers = new Headers(options.headers || {});
+        // 如果还没设置 Authorization，就用我们的 JWT
+        if (!options.headers.has('Authorization')) {
+          options.headers.set('Authorization', 'Bearer ' + jwt);
+          console.debug('🔑 fetch 拦截器: 已注入 Authorization header');
+        }
+      }
+    }
+
+    return originalFetch.call(this, url, options);
+  };
+
+  window._appwriteFetchPatched = true;
+  console.log(`🛡️ Fetch 拦截器已安装 (目标: ${apiOrigin})`);
+}
+
+// 在模块加载时立即安装拦截器（必须在任何 API 调用之前）
+installFetchInterceptor();
+
+/**
  * 确保 client 的 JWT 认证有效（多种方式尝试）
  */
 function applyJWT(client, secret) {
   if (!secret || !client) return false;
+
+  // 方式1: 标准 setJWT（SDK 原生方式）
   try {
-    // 方式1: 标准 setJWT
     if (typeof client.setJWT === 'function') {
       client.setJWT(secret);
       console.log('✅ JWT 已通过 setJWT 设置');
+      // 同时设置 headers 作为双重保险
+      if (client.headers && !client.headers['Authorization']) {
+        client.headers['Authorization'] = 'Bearer ' + secret;
+      }
       return true;
     }
   } catch (e) { console.warn('setJWT 失败:', e.message); }
 
+  // 方式2: 直接写 headers
   try {
-    // 方式2: 直接设置 headers
     if (client.headers) {
       client.headers['Authorization'] = 'Bearer ' + secret;
       console.log('✅ JWT 已通过 headers.Authorization 设置');
@@ -84,8 +139,8 @@ function applyJWT(client, secret) {
     }
   } catch (e) { console.warn('headers 设置失败:', e.message); }
 
+  // 方式3: setSession（旧版 SDK 兼容）
   try {
-    // 方式3: setSession（旧版 SDK）
     if (typeof client.setSession === 'function') {
       client.setSession(secret);
       console.log('✅ JWT 已通过 setSession 设置');
@@ -93,7 +148,7 @@ function applyJWT(client, secret) {
     }
   } catch (e) { console.warn('setSession 失败:', e.message); }
 
-  console.warn('⚠️ 所有 JWT 设置方式均失败');
+  console.warn('⚠️ 所有 JWT 设置方式均失败（fetch 拦截器仍会生效）');
   return false;
 }
 
