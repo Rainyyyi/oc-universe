@@ -1,0 +1,502 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>故事编辑器 - OC宇宙</title>
+  <!-- 主题初始化（必须最靠前） -->
+  <script>
+    try { var t = localStorage.getItem('oc_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); } catch(e) {}
+  </script>
+  <!-- 关键主题色 & 暗色变量（必须内联，防止闪白） -->
+  <style>
+    html, body { background-color: #FFFFFF; }
+    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
+    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+  </style>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/dark-mode.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .editor-container {
+      display: flex;
+      height: calc(100vh - 64px);
+      margin-top: 64px;
+    }
+    .editor-sidebar {
+      width: 280px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+    .editor-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-primary);
+    }
+    .editor-toolbar {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+    .editor-content {
+      flex: 1;
+      padding: var(--spacing-xl);
+      overflow-y: auto;
+    }
+    .editor-footer {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background-color: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chapter-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-md);
+    }
+    .chapter-item {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      margin-bottom: var(--spacing-xs);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      transition: all var(--transition-fast);
+    }
+    .chapter-item:hover {
+      background-color: var(--bg-tertiary);
+    }
+    .chapter-item.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .chapter-item .drag-handle {
+      color: var(--text-muted);
+      cursor: grab;
+    }
+    .markdown-editor {
+      width: 100%;
+      min-height: 500px;
+      padding: var(--spacing-lg);
+      font-family: var(--font-mono);
+      font-size: var(--text-base);
+      line-height: 1.8;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      resize: vertical;
+      background-color: var(--bg-secondary);
+    }
+    .markdown-editor:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding-right: var(--spacing-md);
+      border-right: 1px solid var(--border-color);
+    }
+    .toolbar-group:last-child {
+      border-right: none;
+    }
+    .toolbar-btn {
+      padding: var(--spacing-sm);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+    }
+    .toolbar-btn:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .toolbar-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .word-count {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .ai-assistant {
+      position: fixed;
+      right: var(--spacing-xl);
+      bottom: 100px;
+      z-index: 100;
+    }
+    .ai-panel {
+      position: absolute;
+      bottom: 60px;
+      right: 0;
+      width: 350px;
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+      display: none;
+    }
+    .ai-panel.active {
+      display: block;
+    }
+    .ai-panel-header {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ai-panel-body {
+      padding: var(--spacing-lg);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .ai-suggestion {
+      padding: var(--spacing-md);
+      background-color: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-sm);
+      cursor: pointer;
+    }
+    .ai-suggestion:hover {
+      background-color: var(--border-color);
+    }
+    @media (max-width: 1024px) {
+      .editor-sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <button class="navbar-toggle btn-ghost btn-icon" id="sidebarToggle">
+      <i data-lucide="Menu"></i>
+    </button>
+    <a href="../index.html" class="navbar-brand">
+      <span class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </span>
+      <span>OC宇宙</span>
+    </a>
+    <div class="navbar-menu">
+      <a href="../index.html">世界观</a>
+      <a href="characters.html">角色</a>
+      <a href="stories.html" class="active">故事</a>
+      <a href="chat.html">AI聊天</a>
+      <a href="relationship-map.html">关系图谱</a>
+    </div>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="Moon" class="icon-moon"></i>
+        <i data-lucide="Sun" class="icon-sun"></i>
+      </button>
+      <a href="admin.html" class="btn btn-primary btn-sm">
+        <i data-lucide="Settings"></i>
+        <span>管理后台</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- 编辑器容器 -->
+  <div class="editor-container">
+    <!-- 左侧章节列表 -->
+    <aside class="editor-sidebar">
+      <div class="card-header">
+        <h3 class="card-title">📖 新故事</h3>
+      </div>
+      <div class="chapter-list">
+        <div class="sidebar-section-title" style="padding: var(--spacing-md);">章节列表</div>
+        <div class="empty-state" style="padding: var(--spacing-lg); text-align: center;">
+          <p class="text-muted text-sm">暂无章节</p>
+        </div>
+      </div>
+      <div style="padding: var(--spacing-md); border-top: 1px solid var(--border-color);">
+        <button class="btn btn-primary" style="width: 100%;">
+          <i data-lucide="Plus"></i>
+          添加新章节
+        </button>
+      </div>
+    </aside>
+
+    <!-- 主编辑区 -->
+    <main class="editor-main">
+      <!-- 工具栏 -->
+      <div class="editor-toolbar">
+        <div class="toolbar-group">
+          <button class="toolbar-btn" title="撤销">
+            <i data-lucide="Undo"></i>
+          </button>
+          <button class="toolbar-btn" title="重做">
+            <i data-lucide="Redo"></i>
+          </button>
+        </div>
+        <div class="toolbar-group">
+          <button class="toolbar-btn" title="加粗" onclick="insertMarkdown('**', '**')">
+            <i data-lucide="Bold"></i>
+          </button>
+          <button class="toolbar-btn" title="斜体" onclick="insertMarkdown('*', '*')">
+            <i data-lucide="Italic"></i>
+          </button>
+          <button class="toolbar-btn" title="删除线" onclick="insertMarkdown('~~', '~~')">
+            <i data-lucide="Strikethrough"></i>
+          </button>
+        </div>
+        <div class="toolbar-group">
+          <button class="toolbar-btn" title="标题1" onclick="insertMarkdown('# ', '')">
+            H1
+          </button>
+          <button class="toolbar-btn" title="标题2" onclick="insertMarkdown('## ', '')">
+            H2
+          </button>
+          <button class="toolbar-btn" title="标题3" onclick="insertMarkdown('### ', '')">
+            H3
+          </button>
+        </div>
+        <div class="toolbar-group">
+          <button class="toolbar-btn" title="无序列表" onclick="insertMarkdown('- ', '')">
+            <i data-lucide="List"></i>
+          </button>
+          <button class="toolbar-btn" title="有序列表" onclick="insertMarkdown('1. ', '')">
+            <i data-lucide="ListOrdered"></i>
+          </button>
+          <button class="toolbar-btn" title="引用" onclick="insertMarkdown('> ', '')">
+            <i data-lucide="Quote"></i>
+          </button>
+        </div>
+        <div class="toolbar-group">
+          <button class="toolbar-btn" title="插入链接" onclick="insertMarkdown('[', '](url)')">
+            <i data-lucide="Link"></i>
+          </button>
+          <button class="toolbar-btn" title="插入图片">
+            <i data-lucide="Image"></i>
+          </button>
+          <button class="toolbar-btn" title="插入代码" onclick="insertMarkdown('`', '`')">
+            <i data-lucide="Code"></i>
+          </button>
+        </div>
+        <div class="toolbar-group">
+          <button class="toolbar-btn" title="插入角色卡片" onclick="showCharacterPicker()">
+            <i data-lucide="User"></i>
+          </button>
+          <button class="toolbar-btn" title="插入地点卡片">
+            <i data-lucide="MapPin"></i>
+          </button>
+        </div>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: var(--spacing-md);">
+          <select class="form-input" style="width: auto;">
+            <option value="draft">草稿</option>
+            <option value="published">已发布</option>
+          </select>
+          <button class="btn btn-secondary">
+            <i data-lucide="Eye"></i>
+            预览
+          </button>
+          <button class="btn btn-primary" onclick="saveChapter()">
+            <i data-lucide="Save"></i>
+            保存
+          </button>
+        </div>
+      </div>
+
+      <!-- 编辑内容 -->
+      <div class="editor-content">
+        <div class="form-group">
+          <input type="text" class="form-input form-input-lg" placeholder="输入章节标题..." style="font-weight: 600; border: none; background: transparent; padding-left: 0;">
+        </div>
+        <textarea class="markdown-editor" id="editor" placeholder="开始写作..."></textarea>
+      </div>
+
+      <!-- 底部状态栏 -->
+      <div class="editor-footer">
+        <div class="flex gap-lg">
+          <span class="word-count">
+            <i data-lucide="FileText"></i>
+            字数: <strong id="wordCount">0</strong>
+          </span>
+          <span class="word-count">
+            <i data-lucide="AlignLeft"></i>
+            段落: <strong>0</strong>
+          </span>
+          <span class="word-count">
+            <i data-lucide="Clock"></i>
+            预计阅读: <strong>0 分钟</strong>
+          </span>
+        </div>
+        <div class="flex gap-md items-center">
+          <span class="text-sm text-muted">暂无保存记录</span>
+          <span class="tag" style="background: var(--bg-tertiary);">自动保存已关闭</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- AI助手浮动按钮 -->
+  <div class="ai-assistant">
+    <div class="ai-panel" id="aiPanel">
+      <div class="ai-panel-header">
+        <h4 style="margin: 0;">🤖 AI写作助手</h4>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="toggleAIPanel()">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="ai-panel-body">
+        <div class="form-group">
+          <input type="text" class="form-input" placeholder="向AI提问或请求帮助...">
+        </div>
+        <div class="sidebar-section-title" style="margin-top: var(--spacing-md);">快捷功能</div>
+        <div class="ai-suggestion" onclick="aiHelp('continue')">
+          <i data-lucide="Sparkles"></i>
+          <span>续写下一句</span>
+        </div>
+        <div class="ai-suggestion" onclick="aiHelp('dialogue')">
+          <i data-lucide="MessageSquare"></i>
+          <span>生成对话</span>
+        </div>
+        <div class="ai-suggestion" onclick="aiHelp('describe')">
+          <i data-lucide="Image"></i>
+          <span>场景描写</span>
+        </div>
+        <div class="ai-suggestion" onclick="aiHelp('emotion')">
+          <i data-lucide="Heart"></i>
+          <span>情感描写</span>
+        </div>
+        <div class="ai-suggestion" onclick="aiHelp('rewrite')">
+          <i data-lucide="Edit3"></i>
+          <span>润色重写</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" onclick="toggleAIPanel()">
+      <i data-lucide="Bot"></i>
+    </button>
+  </div>
+
+  <!-- 角色选择模态框 -->
+  <div class="modal-overlay" id="characterPickerModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">👤 选择角色</h3>
+        <button class="modal-close" onclick="closeModal('characterPickerModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-input" placeholder="搜索角色..." style="margin-bottom: var(--spacing-md);">
+        <div class="empty-state" style="padding: var(--spacing-xl); text-align: center;">
+          <p class="text-muted">暂无角色，请先在角色页面创建角色</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../js/app.js"></script>
+  <script src="../js/data.js"></script>
+  <script>
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+      updateWordCount();
+      
+      // 自动保存
+      setInterval(function() {
+        autoSave();
+      }, 30000);
+    });
+    
+    // 编辑器
+    const editor = document.getElementById('editor');
+    
+    // 插入Markdown语法
+    function insertMarkdown(prefix, suffix) {
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const text = editor.value;
+      const selected = text.substring(start, end);
+      
+      editor.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
+      editor.focus();
+      editor.selectionStart = start + prefix.length;
+      editor.selectionEnd = start + prefix.length + selected.length;
+      
+      updateWordCount();
+    }
+    
+    // 更新字数统计
+    function updateWordCount() {
+      const text = editor.value;
+      const count = text.replace(/\s/g, '').length;
+      document.getElementById('wordCount').textContent = count.toLocaleString();
+    }
+    
+    // 监听编辑器变化
+    editor.addEventListener('input', updateWordCount);
+    
+    // 保存章节
+    function saveChapter() {
+      alert('章节已保存！');
+    }
+    
+    // 自动保存
+    function autoSave() {
+      console.log('自动保存中...');
+    }
+    
+    // 切换AI面板
+    function toggleAIPanel() {
+      document.getElementById('aiPanel').classList.toggle('active');
+    }
+    
+    // AI帮助
+    function aiHelp(type) {
+      const helps = {
+        continue: '正在续写下一句...',
+        dialogue: '正在生成对话...',
+        describe: '正在生成场景描写...',
+        emotion: '正在生成情感描写...',
+        rewrite: '正在润色重写...'
+      };
+      alert(helps[type]);
+    }
+    
+    // 显示角色选择器
+    function showCharacterPicker() {
+      document.getElementById('characterPickerModal').classList.add('active');
+    }
+    
+    // 关闭模态框
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+    
+    // 插入角色卡片
+    function insertCharacterCard(name) {
+      const card = `\n\n**角色卡片：${name}**\n- 身份：[待填写]\n- 当前状态：[待填写]\n- 心情：[待填写]\n\n`;
+      const pos = editor.selectionStart;
+      editor.value = editor.value.substring(0, pos) + card + editor.value.substring(pos);
+      closeModal('characterPickerModal');
+      updateWordCount();
+    }
+  </script>
+</body>
+</html>

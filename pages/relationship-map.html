@@ -1,0 +1,652 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>关系图谱 - OC宇宙</title>
+  <!-- 主题初始化（必须最靠前） -->
+  <script>
+    try { var t = localStorage.getItem('oc_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); } catch(e) {}
+  </script>
+  <!-- 关键主题色 & 暗色变量（必须内联，防止闪白） -->
+  <style>
+    html, body { background-color: #FFFFFF; }
+    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
+    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+  </style>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/dark-mode.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    .graph-container {
+      display: flex;
+      height: calc(100vh - 64px);
+      margin-top: 64px;
+    }
+    .graph-sidebar {
+      width: 300px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .graph-main {
+      flex: 1;
+      position: relative;
+      background-color: var(--bg-primary);
+    }
+    .graph-toolbar {
+      position: absolute;
+      top: var(--spacing-lg);
+      left: var(--spacing-lg);
+      z-index: 10;
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+    .graph-legend {
+      position: absolute;
+      bottom: var(--spacing-lg);
+      left: var(--spacing-lg);
+      z-index: 10;
+      background-color: var(--bg-secondary);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-xs);
+    }
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: var(--radius-sm);
+    }
+    .graph-info {
+      position: absolute;
+      top: var(--spacing-lg);
+      right: var(--spacing-lg);
+      z-index: 10;
+      background-color: var(--bg-secondary);
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      max-width: 300px;
+      display: none;
+    }
+    .graph-info.active {
+      display: block;
+      animation: scaleIn 0.3s ease-out;
+    }
+    #relationshipChart {
+      width: 100%;
+      height: 100%;
+    }
+    .filter-section {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .character-filter-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .character-filter-item:hover {
+      background-color: var(--bg-tertiary);
+    }
+    .character-filter-item.selected {
+      background-color: var(--primary-light);
+    }
+    .relation-type-filter {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      margin-bottom: var(--spacing-xs);
+    }
+    .relation-type-filter:hover {
+      background-color: var(--bg-tertiary);
+    }
+    .relation-type-filter input {
+      width: auto;
+    }
+    @media (max-width: 1024px) {
+      .graph-sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <button class="navbar-toggle btn-ghost btn-icon" id="sidebarToggle">
+      <i data-lucide="Menu"></i>
+    </button>
+    <a href="../index.html" class="navbar-brand">
+      <span class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </span>
+      <span>OC宇宙</span>
+    </a>
+    <div class="navbar-menu">
+      <a href="../index.html">世界观</a>
+      <a href="characters.html">角色</a>
+      <a href="stories.html">故事</a>
+      <a href="chat.html">AI聊天</a>
+      <a href="relationship-map.html" class="active">关系图谱</a>
+    </div>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="Moon" class="icon-moon"></i>
+        <i data-lucide="Sun" class="icon-sun"></i>
+      </button>
+      <a href="admin.html" class="btn btn-primary btn-sm">
+        <i data-lucide="Settings"></i>
+        <span>管理后台</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- 图谱容器 -->
+  <div class="graph-container">
+    <!-- 左侧筛选面板 -->
+    <aside class="graph-sidebar">
+      <div class="card-header">
+        <h3 class="card-title"><i data-lucide="Network" style="width:1.2em;height:1.2em;vertical-align:middle;margin-right:4px;"></i> 关系图谱</h3>
+      </div>
+      
+      <div class="filter-section">
+        <div class="sidebar-section-title">选择世界观</div>
+        <select class="form-input" id="worldSelect" onchange="loadWorldGraph(this.value)">
+          <option value="">请先创建世界观</option>
+        </select>
+      </div>
+      
+      <div class="filter-section">
+        <div class="sidebar-section-title">关系类型筛选</div>
+        <div id="relationTypeFilters">
+          <div class="empty-state" style="padding: var(--spacing-md); text-align: center;">
+            <p class="text-muted text-sm">暂无自定义关系类型</p>
+            <button class="btn btn-ghost btn-sm" style="margin-top: var(--spacing-sm);" onclick="showCreateRelationTypeModal()">
+              <i data-lucide="Plus"></i> 创建关系类型
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="filter-section">
+        <div class="sidebar-section-title">角色筛选</div>
+        <input type="text" class="form-input" placeholder="搜索角色..." style="margin-bottom: var(--spacing-md);">
+        <div class="empty-state" style="padding: var(--spacing-lg); text-align: center;">
+          <p class="text-muted text-sm">暂无角色</p>
+        </div>
+      </div>
+      
+      <div class="filter-section">
+        <div class="sidebar-section-title">时间轴筛选</div>
+        <select class="form-input">
+          <option value="all">全部时间</option>
+          <option value="before">帝国历1260年前</option>
+          <option value="during">帝国历1260-1270年</option>
+          <option value="after">帝国历1270年后</option>
+        </select>
+        <p class="text-sm text-muted" style="margin-top: var(--spacing-sm);">
+          选择时间点查看关系变化
+        </p>
+      </div>
+      
+      <div style="padding: var(--spacing-md); margin-top: auto; border-top: 1px solid var(--border-color);">
+        <button class="btn btn-primary" style="width: 100%;" onclick="showAddRelationModal()">
+          <i data-lucide="Plus"></i>
+          添加关系
+        </button>
+      </div>
+    </aside>
+
+    <!-- 主图谱区域 -->
+    <main class="graph-main">
+      <!-- 工具栏 -->
+      <div class="graph-toolbar">
+        <button class="btn btn-secondary" onclick="zoomIn()">
+          <i data-lucide="ZoomIn"></i>
+        </button>
+        <button class="btn btn-secondary" onclick="zoomOut()">
+          <i data-lucide="ZoomOut"></i>
+        </button>
+        <button class="btn btn-secondary" onclick="resetZoom()">
+          <i data-lucide="Maximize2"></i>
+        </button>
+        <button class="btn btn-secondary" onclick="downloadGraph()">
+          <i data-lucide="Download"></i>
+        </button>
+        <select class="form-input" style="width: auto;" onchange="changeLayout(this.value)">
+          <option value="force">力导向布局</option>
+          <option value="circular">环形布局</option>
+          <option value="tree">树形布局</option>
+        </select>
+      </div>
+
+      <!-- 图表 -->
+      <div id="relationshipChart"></div>
+
+      <!-- 图例 -->
+      <div class="graph-legend" id="graphLegend">
+        <div class="sidebar-section-title">关系类型</div>
+        <div id="legendItems">
+          <div class="empty-state" style="padding: var(--spacing-md); text-align: center;">
+            <p class="text-muted text-sm">暂无关系类型</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 角色详情面板 -->
+      <div class="graph-info" id="characterInfo">
+        <div class="flex items-center gap-md" style="margin-bottom: var(--spacing-md);">
+          <img src="" alt="" class="avatar avatar-lg" id="infoAvatar">
+          <div>
+            <h3 style="margin: 0;" id="infoName">角色名称</h3>
+            <p class="text-sm text-muted" style="margin: 0;" id="infoMeta">种族 · 年龄</p>
+          </div>
+        </div>
+        <p class="text-sm" id="infoDesc">角色简介...</p>
+        <div style="margin-top: var(--spacing-md);">
+          <div class="sidebar-section-title">关系数量</div>
+          <div class="flex gap-md" style="margin-top: var(--spacing-sm);">
+            <div style="text-align: center;">
+              <div style="font-size: var(--text-xl); font-weight: 700; color: var(--primary-color);" id="infoRelations">0</div>
+              <div class="text-xs text-muted">关系</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: var(--text-xl); font-weight: 700; color: var(--success-color);" id="infoFriends">0</div>
+              <div class="text-xs text-muted">友好</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: var(--text-xl); font-weight: 700; color: var(--error-color);" id="infoEnemies">0</div>
+              <div class="text-xs text-muted">敌对</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: var(--spacing-md);">
+          <a href="#" class="btn btn-primary btn-sm" style="width: 100%;" id="infoLink">
+            <i data-lucide="User"></i>
+            查看详情
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 添加关系模态框 -->
+  <div class="modal-overlay" id="addRelationModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🔗 添加关系</h3>
+        <button class="modal-close" onclick="closeModal('addRelationModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">角色A</label>
+              <select class="form-input" required>
+                <option value="">暂无角色</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">角色B</label>
+              <select class="form-input" required>
+                <option value="">暂无角色</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">关系类型</label>
+              <select class="form-input" id="relationTypeSelect" required onchange="handleRelationTypeChange()">
+                <option value="">选择类型...</option>
+                <!-- 关系类型将通过JS动态加载 -->
+              </select>
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-top: var(--spacing-xs);" onclick="showCreateRelationTypeModal()">
+                <i data-lucide="Plus"></i> 创建新关系类型
+              </button>
+            </div>
+            <div class="form-group">
+              <label class="form-label">关系颜色</label>
+              <input type="color" id="relationColor" value="#5470c6" style="width: 100%; height: 40px; border: none; cursor: pointer;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">关系描述（自定义关系名称）</label>
+            <input type="text" class="form-input" id="relationDesc" placeholder="如：挚友、师徒、死敌...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">关系强度</label>
+            <input type="range" id="relationStrength" min="0" max="100" value="50" style="width: 100%;">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('addRelationModal')">取消</button>
+        <button class="btn btn-primary">
+          <i data-lucide="Plus"></i>
+          添加关系
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建关系类型模态框 -->
+  <div class="modal-overlay" id="createRelationTypeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🔗 创建关系类型</h3>
+        <button class="modal-close" onclick="closeModal('createRelationTypeModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createRelationTypeForm">
+          <div class="form-group">
+            <label class="form-label required">关系名称</label>
+            <input type="text" class="form-input" id="relationTypeName" placeholder="如：挚友、师徒、死敌、竞争对手..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">关系颜色</label>
+            <input type="color" id="relationTypeColor" value="#5470c6" style="width: 100%; height: 40px; border: none; cursor: pointer;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">关系描述</label>
+            <input type="text" class="form-input" id="relationTypeDesc" placeholder="描述这种关系的特点">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('createRelationTypeModal')">取消</button>
+        <button class="btn btn-primary" onclick="createRelationType()">
+          <i data-lucide="Plus"></i>
+          创建关系类型
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../js/app.js"></script>
+  <script src="../js/data.js"></script>
+  <script>
+    let chart;
+    
+    // 关系类型存储键
+    const RELATION_TYPE_KEY = 'oc_relation_types';
+    
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+      loadRelationTypes();
+      loadRelationTypeFilters();
+      initGraph();
+    });
+    
+    // 加载关系类型到下拉框
+    function loadRelationTypes() {
+      const types = JSON.parse(localStorage.getItem(RELATION_TYPE_KEY) || '[]');
+      const select = document.getElementById('relationTypeSelect');
+      
+      let options = '<option value="">选择类型...</option>';
+      types.forEach(type => {
+        options += `<option value="${type.id}" data-color="${type.color}">${type.name}</option>`;
+      });
+      select.innerHTML = options;
+    }
+    
+    // 处理关系类型选择变化
+    function handleRelationTypeChange() {
+      const select = document.getElementById('relationTypeSelect');
+      const selectedOption = select.options[select.selectedIndex];
+      const color = selectedOption.getAttribute('data-color');
+      
+      if (color) {
+        document.getElementById('relationColor').value = color;
+      }
+    }
+    
+    // 显示创建关系类型模态框
+    function showCreateRelationTypeModal() {
+      document.getElementById('createRelationTypeModal').classList.add('active');
+    }
+    
+    // 创建关系类型
+    function createRelationType() {
+      const name = document.getElementById('relationTypeName').value.trim();
+      const color = document.getElementById('relationTypeColor').value;
+      const desc = document.getElementById('relationTypeDesc').value.trim();
+      
+      if (!name) {
+        alert('请输入关系名称');
+        return;
+      }
+      
+      const types = JSON.parse(localStorage.getItem(RELATION_TYPE_KEY) || '[]');
+      
+      // 检查是否已存在同名关系
+      if (types.some(t => t.name === name)) {
+        alert('关系名称已存在');
+        return;
+      }
+      
+      const newType = {
+        id: 'rel_' + Date.now(),
+        name: name,
+        color: color,
+        desc: desc,
+        createdAt: new Date().toISOString()
+      };
+      
+      types.push(newType);
+      localStorage.setItem(RELATION_TYPE_KEY, JSON.stringify(types));
+      
+      // 重新加载关系类型
+      loadRelationTypes();
+      loadRelationTypeFilters();
+      
+      // 关闭模态框
+      closeModal('createRelationTypeModal');
+      
+      // 清空表单
+      document.getElementById('relationTypeName').value = '';
+      document.getElementById('relationTypeDesc').value = '';
+      
+      alert('关系类型创建成功！');
+    }
+    
+    // 加载关系类型筛选器
+    function loadRelationTypeFilters() {
+      const types = JSON.parse(localStorage.getItem(RELATION_TYPE_KEY) || '[]');
+      const container = document.getElementById('relationTypeFilters');
+      
+      if (types.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: var(--spacing-md); text-align: center;">
+            <p class="text-muted text-sm">暂无自定义关系类型</p>
+            <button class="btn btn-ghost btn-sm" style="margin-top: var(--spacing-sm);" onclick="showCreateRelationTypeModal()">
+              <i data-lucide="Plus"></i> 创建关系类型
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = types.map(type => `
+        <div class="relation-type-filter">
+          <input type="checkbox" checked id="filter-${type.id}" data-type-id="${type.id}" onchange="updateGraph()">
+          <span style="color: ${type.color};">●</span>
+          <label for="filter-${type.id}">${type.name}</label>
+        </div>
+      `).join('');
+    }
+    
+    // 初始化关系图谱
+    function initGraph() {
+      chart = echarts.init(document.getElementById('relationshipChart'));
+      
+      const option = {
+        tooltip: {
+          trigger: 'item',
+          formatter: function(params) {
+            if (params.dataType === 'node') {
+              return `<strong>${params.data.name}</strong><br/>${params.data.desc || ''}`;
+            } else {
+              return `<strong>${params.data.relation}</strong><br/>强度: ${params.data.strength}%`;
+            }
+          }
+        },
+        series: [{
+          type: 'graph',
+          layout: 'force',
+          animation: true,
+          draggable: true,
+          roam: true,
+          label: {
+            show: true,
+            position: 'bottom',
+            formatter: '{b}'
+          },
+          labelLayout: {
+            hideOverlap: true
+          },
+          force: {
+            repulsion: 300,
+            edgeLength: [100, 200],
+            gravity: 0.1
+          },
+          emphasis: {
+            focus: 'adjacency',
+            lineStyle: {
+              width: 4
+            }
+          },
+          data: [],
+          links: [],
+          categories: [
+            { name: '主角' },
+            { name: '反派' },
+            { name: '配角' }
+          ]
+        }]
+      };
+      
+      chart.setOption(option);
+      
+      // 点击事件
+      chart.on('click', function(params) {
+        if (params.dataType === 'node') {
+          showCharacterInfo(params.data);
+        }
+      });
+      
+      // 响应窗口大小变化
+      window.addEventListener('resize', function() {
+        chart.resize();
+      });
+    }
+    
+    // 显示角色信息
+    function showCharacterInfo(data) {
+      const panel = document.getElementById('characterInfo');
+      document.getElementById('infoAvatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.name}`;
+      document.getElementById('infoName').textContent = data.name;
+      document.getElementById('infoMeta').textContent = data.desc || '';
+      document.getElementById('infoDesc').textContent = `点击查看 ${data.name} 的详细信息...`;
+      document.getElementById('infoRelations').textContent = Math.floor(Math.random() * 5) + 3;
+      document.getElementById('infoFriends').textContent = Math.floor(Math.random() * 3) + 1;
+      document.getElementById('infoEnemies').textContent = Math.floor(Math.random() * 2);
+      panel.classList.add('active');
+    }
+    
+    // 缩放控制
+    function zoomIn() {
+      const option = chart.getOption();
+      // 实现缩放逻辑
+    }
+    
+    function zoomOut() {
+      // 实现缩放逻辑
+    }
+    
+    function resetZoom() {
+      chart.dispatchAction({
+        type: 'restore'
+      });
+    }
+    
+    // 下载图谱
+    function downloadGraph() {
+      const url = chart.getDataURL({
+        type: 'png',
+        pixelRatio: 2,
+        backgroundColor: '#fff'
+      });
+      const link = document.createElement('a');
+      link.download = '关系图谱.png';
+      link.href = url;
+      link.click();
+    }
+    
+    // 切换布局
+    function changeLayout(type) {
+      const option = chart.getOption();
+      option.series[0].layout = type;
+      chart.setOption(option);
+    }
+    
+    // 更新图谱
+    function updateGraph() {
+      // 根据筛选条件更新图谱
+    }
+    
+    // 切换角色选择
+    function toggleCharacter(element, id) {
+      element.classList.toggle('selected');
+      updateGraph();
+    }
+    
+    // 加载世界观图谱
+    function loadWorldGraph(id) {
+      // 加载不同世界观的关系数据
+    }
+    
+    // 显示添加关系模态框
+    function showAddRelationModal() {
+      document.getElementById('addRelationModal').classList.add('active');
+    }
+    
+    // 关闭模态框
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+  </script>
+</body>
+</html>

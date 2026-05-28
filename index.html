@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OC宇宙 - 原创角色管理平台</title>
+  <!-- 主题初始化（必须最靠前） -->
+  <script>
+    try {
+      var t = localStorage.getItem('oc_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  </script>
+  <!-- 关键主题色 & 暗色变量（必须内联，防止 CSS 加载期间闪白） -->
+  <style>
+    html, body { background-color: #FFFFFF; }
+    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
+    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+  </style>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/dark-mode.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Appwrite Web SDK（defer 不阻塞页面渲染）-->
+  <script defer src="https://cdn.jsdelivr.net/npm/appwrite@17/dist/iife/sdk.min.js"></script>
+  <!-- Google Fonts -->
+  <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <button class="navbar-toggle btn-ghost btn-icon" id="sidebarToggle">
+      <i data-lucide="Menu"></i>
+    </button>
+    <a href="index.html" class="navbar-brand">
+      <span class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </span>
+      <span>OC宇宙</span>
+    </a>
+    <div class="navbar-menu">
+      <a href="index.html" class="active">世界观</a>
+      <a href="pages/characters.html">角色</a>
+      <a href="pages/stories.html">故事</a>
+      <a href="pages/chat.html">AI聊天</a>
+      <a href="pages/relationship-map.html">关系图谱</a>
+    </div>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="Moon" class="icon-moon"></i>
+        <i data-lucide="Sun" class="icon-sun"></i>
+      </button>
+      <a href="pages/admin.html" class="btn btn-primary btn-sm" onclick="if(!isLoggedIn()){showLoginModal();return false;}">
+        <i data-lucide="Settings"></i>
+        <span>管理后台</span>
+      </a>
+      <!-- 用户状态按钮 -->
+      <div id="authBtnGroup" style="display:none;">
+        <button class="btn btn-ghost btn-sm" id="userInfoBtn" onclick="showUserInfo()" style="display:none;">
+          <i data-lucide="User"></i>
+          <span id="userNameDisplay">用户</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="showLoginModal()">
+          <i data-lucide="LogIn"></i>
+          <span>登录</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="form-group" style="margin-bottom: 0;">
+        <input type="text" class="form-input" placeholder="搜索世界观..." id="searchWorld">
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="sidebar-nav-item active">
+        <span class="icon"><i data-lucide="Globe"></i></span>
+        <span>全部世界观</span>
+      </a>
+    </nav>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">快速入口</div>
+      <a href="pages/characters.html" class="sidebar-nav-item">
+        <span class="icon"><i data-lucide="Users"></i></span>
+        <span>角色列表</span>
+      </a>
+      <a href="pages/stories.html" class="sidebar-nav-item">
+        <span class="icon"><i data-lucide="BookOpen"></i></span>
+        <span>故事列表</span>
+      </a>
+      <a href="pages/chat.html" class="sidebar-nav-item">
+        <span class="icon"><i data-lucide="MessageCircle"></i></span>
+        <span>AI聊天</span>
+      </a>
+      <a href="pages/relationship-map.html" class="sidebar-nav-item">
+        <span class="icon"><i data-lucide="Network"></i></span>
+        <span>关系图谱</span>
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">最近访问</div>
+      <div id="recentWorlds">
+        <div class="empty-state" style="padding: var(--spacing-md); text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+          <p>暂无访问记录</p>
+          <p style="font-size: 0.75rem; margin-top: var(--spacing-xs);">创建世界观后会自动显示</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="main-content">
+    <!-- 页面头部 -->
+    <header class="page-header">
+      <div class="page-title">
+        <h1>我的世界观</h1>
+        <div class="breadcrumb">
+          <a href="index.html">首页</a>
+          <span class="separator">/</span>
+          <span>世界观列表</span>
+        </div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-secondary" onclick="showImportModal()">
+          <i data-lucide="Upload"></i>
+          <span>导入</span>
+        </button>
+        <button class="btn btn-primary" onclick="showCreateWorldModal()">
+          <i data-lucide="Plus"></i>
+          <span>创建新世界观</span>
+        </button>
+      </div>
+    </header>
+
+
+    <!-- 世界观列表 -->
+    <section class="worlds-section">
+      <div class="flex justify-between items-center" style="margin-bottom: var(--spacing-lg);">
+        <h2>全部世界观</h2>
+        <div class="flex gap-sm">
+          <select class="form-input" style="width: auto;" id="sortWorlds">
+            <option value="recent">最近更新</option>
+            <option value="name">名称排序</option>
+            <option value="characters">角色数量</option>
+          </select>
+          <button class="btn btn-ghost btn-icon" title="网格视图">
+            <i data-lucide="LayoutGrid"></i>
+          </button>
+          <button class="btn btn-ghost btn-icon" title="列表视图">
+            <i data-lucide="List"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="grid-cards" id="worldsList">
+        <!-- 空状态：分步引导 -->
+        <div class="characters-empty-guide" style="grid-column: 1 / -1;">
+          <div class="empty-guide-header">
+            <div class="empty-guide-icon">
+              <i data-lucide="telescope"></i>
+            </div>
+            <h3>欢迎来到 OC 宇宙</h3>
+            <p class="text-muted">从创建你的第一个世界观开始，构建属于你的原创宇宙</p>
+          </div>
+          <div class="empty-guide-steps">
+            <div class="guide-step">
+              <div class="guide-step-num">01</div>
+              <div class="guide-step-content">
+                <div class="guide-step-icon"><i data-lucide="globe"></i></div>
+                <h4>创建世界观</h4>
+                <p>设定世界的背景、规则与基调，为你的故事搭建舞台</p>
+                <button class="btn btn-primary btn-sm" onclick="showCreateWorldModal()">
+                  <i data-lucide="plus"></i>
+                  立即创建
+                </button>
+              </div>
+            </div>
+            <div class="guide-step-arrow"><i data-lucide="chevron-right"></i></div>
+            <div class="guide-step">
+              <div class="guide-step-num">02</div>
+              <div class="guide-step-content">
+                <div class="guide-step-icon"><i data-lucide="user-plus"></i></div>
+                <h4>添加角色</h4>
+                <p>为你的世界赋予灵魂，设计独特的人物形象与性格</p>
+                <a href="pages/characters.html" class="btn btn-ghost btn-sm">
+                  <i data-lucide="arrow-right"></i>
+                  去添加
+                </a>
+              </div>
+            </div>
+            <div class="guide-step-arrow"><i data-lucide="chevron-right"></i></div>
+            <div class="guide-step">
+              <div class="guide-step-num">03</div>
+              <div class="guide-step-content">
+                <div class="guide-step-icon"><i data-lucide="message-circle"></i></div>
+                <h4>与角色对话</h4>
+                <p>通过 AI 聊天功能，让角色开口说话，探索更多可能</p>
+                <a href="pages/chat.html" class="btn btn-ghost btn-sm">
+                  <i data-lucide="arrow-right"></i>
+                  去聊天
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 创建世界观模态框 -->
+  <div class="modal-overlay" id="createWorldModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">创建新世界观</h3>
+        <button class="modal-close" onclick="closeModal('createWorldModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createWorldForm">
+          <div class="form-group">
+            <label class="form-label required">世界观名称</label>
+            <input type="text" class="form-input" placeholder="输入世界观名称..." required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">世界类型</label>
+              <select class="form-input" required>
+                <option value="">选择类型...</option>
+                <option value="fantasy">奇幻</option>
+                <option value="scifi">科幻</option>
+                <option value="modern">现代</option>
+                <option value="historical">古风</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">世界基调</label>
+              <select class="form-input">
+                <option value="">选择基调...</option>
+                <option value="dark">黑暗</option>
+                <option value="light">温馨</option>
+                <option value="neutral">中性</option>
+                <option value="mixed">明暗交织</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">简介描述</label>
+            <textarea class="form-input form-textarea" placeholder="描述这个世界观的基本设定..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">封面图片</label>
+            <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: var(--spacing-xl); text-align: center; cursor: pointer;" onclick="document.getElementById('worldCoverInput').click()">
+              <input type="file" id="worldCoverInput" accept="image/*" style="display: none;">
+              <i data-lucide="CloudUpload" style="font-size: 2rem; color: var(--text-muted); margin-bottom: var(--spacing-sm);"></i>
+              <p class="text-muted text-sm">点击或拖拽上传图片</p>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('createWorldModal')">取消</button>
+        <button class="btn btn-primary" onclick="createWorld()">
+          <i data-lucide="Plus"></i>
+          创建世界观
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入模态框 -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">导入数据</h3>
+        <button class="modal-close" onclick="closeModal('importModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">选择导入方式</label>
+          <div class="flex gap-md" style="margin-bottom: var(--spacing-lg);">
+            <button class="btn btn-secondary" style="flex: 1; padding: var(--spacing-lg);">
+              <i data-lucide="Upload" style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);"></i>
+              <div>上传JSON文件</div>
+            </button>
+            <button class="btn btn-secondary" style="flex: 1; padding: var(--spacing-lg);">
+              <i data-lucide="Clipboard" style="font-size: 1.5rem; margin-bottom: var(--spacing-sm);"></i>
+              <div>粘贴数据</div>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">或粘贴JSON数据</label>
+          <textarea class="form-input form-textarea" placeholder='{"worlds": [...], "characters": [...]}' style="min-height: 150px;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('importModal')">取消</button>
+        <button class="btn btn-primary">
+          <i data-lucide="Download"></i>
+          导入数据
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分享/邀请协作者模态框 -->
+  <div class="modal-overlay" id="shareModal">
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-header">
+        <h3 style="margin:0;">邀请协作者</h3>
+        <button class="modal-close" onclick="closeModal('shareModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="shareModalBody">
+        <p class="text-muted text-sm" id="shareWorldName" style="margin-bottom:var(--spacing-md);"></p>
+        <label style="display:block;margin-bottom:6px;font-size:0.875rem;font-weight:500;color:var(--text-secondary);">用户 ID 或邮箱</label>
+        <input type="text" id="shareUserInput" class="form-input" placeholder="输入要邀请的用户 Appwrite ID 或邮箱" style="width:100%;box-sizing:border-box;" onkeydown="if(event.key==='Enter')event.preventDefault();if(event.key==='Enter')inviteCollaborator();">
+        <div id="collaboratorsList" style="margin-top:var(--spacing-md);"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('shareModal')">取消</button>
+        <button class="btn btn-primary" onclick="inviteCollaborator()">
+          <i data-lucide="UserPlus"></i> 邀请
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="js/app.js"></script>
+  <script src="js/appwrite.js"></script>
+  <script src="js/api-client.js"></script>
+  <script src="js/data.js"></script>
+  <script>
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', async function() {
+      // 初始化主题
+      initTheme();
+      
+      // 初始化 Appwrite 数据模式（检测登录状态）
+      await OCData.initDataMode();
+      
+      // 更新登录按钮状态
+      await updateAuthUI();
+      
+      // 加载世界观
+      await loadWorlds();
+    });
+    
+    // 更新导航栏用户状态
+    async function updateAuthUI() {
+      const group = document.getElementById('authBtnGroup');
+      const userBtn = document.getElementById('userInfoBtn');
+      const loginBtn = group?.querySelector('.btn-secondary');
+      const nameSpan = document.getElementById('userNameDisplay');
+      
+      if (!group) return;
+      group.style.display = 'flex';
+      group.style.gap = '8px';
+      group.style.alignItems = 'center';
+      
+      const loggedIn = await OCData.isLoggedIn();
+      if (loggedIn) {
+        const user = await AppwriteAuth.getCurrentUser().catch(() => null);
+        if (nameSpan && user) nameSpan.textContent = user.name || user.email || '用户';
+        if (userBtn) userBtn.style.display = 'flex';
+        if (loginBtn) {
+          loginBtn.innerHTML = '<i data-lucide="LogOut"></i><span>退出</span>';
+          loginBtn.onclick = doLogout;
+        }
+      } else {
+        if (userBtn) userBtn.style.display = 'none';
+        if (loginBtn) {
+          loginBtn.innerHTML = '<i data-lucide="LogIn"></i><span>登录</span>';
+          loginBtn.onclick = showLoginModal;
+        }
+      }
+    }
+    
+    // 加载并渲染世界观列表
+    async function loadWorlds() {
+      const container = document.getElementById('worldsList');
+      if (!container) return;
+      
+      try {
+        const worlds = await OCData.getWorlds();
+        
+        if (!worlds || worlds.length === 0) {
+          container.innerHTML = `
+            <div class="characters-empty-guide" style="grid-column: 1 / -1;">
+              <div class="empty-guide-header">
+                <div class="empty-guide-icon">
+                  <i data-lucide="telescope"></i>
+                </div>
+                <h3>欢迎来到 OC 宇宙</h3>
+                <p class="text-muted">从创建你的第一个世界观开始，构建属于你的原创宇宙</p>
+              </div>
+              <div class="empty-guide-steps">
+                <div class="guide-step">
+                  <div class="guide-step-num">01</div>
+                  <div class="guide-step-content">
+                    <div class="guide-step-icon"><i data-lucide="globe"></i></div>
+                    <h4>创建世界观</h4>
+                    <p>设定世界的背景、规则与基调，为你的故事搭建舞台</p>
+                    <button class="btn btn-primary btn-sm" onclick="showCreateWorldModal()">
+                      <i data-lucide="plus"></i>
+                      立即创建
+                    </button>
+                  </div>
+                </div>
+                <div class="guide-step-arrow"><i data-lucide="chevron-right"></i></div>
+                <div class="guide-step">
+                  <div class="guide-step-num">02</div>
+                  <div class="guide-step-content">
+                    <div class="guide-step-icon"><i data-lucide="user-plus"></i></div>
+                    <h4>添加角色</h4>
+                    <p>为你的世界赋予灵魂，设计独特的人物形象与性格</p>
+                    <a href="pages/characters.html" class="btn btn-ghost btn-sm">
+                      <i data-lucide="arrow-right"></i>
+                      去添加
+                    </a>
+                  </div>
+                </div>
+                <div class="guide-step-arrow"><i data-lucide="chevron-right"></i></div>
+                <div class="guide-step">
+                  <div class="guide-step-num">03</div>
+                  <div class="guide-step-content">
+                    <div class="guide-step-icon"><i data-lucide="message-circle"></i></div>
+                    <h4>与角色对话</h4>
+                    <p>通过 AI 聊天功能，让角色开口说话，探索更多可能</p>
+                    <a href="pages/chat.html" class="btn btn-ghost btn-sm">
+                      <i data-lucide="arrow-right"></i>
+                      去聊天
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+        
+        const typeLabels = { fantasy:'奇幻', scifi:'科幻', modern:'现代', historical:'古风', other:'其他' };
+        const toneLabels = { dark:'黑暗', light:'温馨', neutral:'中性', mixed:'明暗交织' };
+        
+        container.innerHTML = worlds.map(w => `
+          <div class="card" style="cursor:pointer;" onclick="window.location.href='pages/characters.html?worldId=${w.$id || w.id}'">
+            <div class="card-cover" style="height:140px;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius-md) var(--radius-md) 0 0;">
+              ${w.coverImage
+                ? `<img src="${w.coverImage}" style="width:100%;height:100%;object-fit:cover;" alt="封面">`
+                : `<span style="font-size:3rem; color: var(--text-muted);"><i data-lucide="Globe" style="width:1em;height:1em;"></i></span>`}
+            </div>
+            <div class="card-body" style="padding:var(--spacing-md);">
+              <h3 style="margin:0 0 var(--spacing-xs);">${w.name}</h3>
+              <div style="display:flex;gap:var(--spacing-xs);flex-wrap:wrap;margin-bottom:var(--spacing-sm);">
+                ${w.type ? `<span class="badge">${typeLabels[w.type] || w.type}</span>` : ''}
+                ${w.tone ? `<span class="badge badge-secondary">${toneLabels[w.tone] || w.tone}</span>` : ''}
+                ${(w.collaborators && w.collaborators.length > 0) ? `<span class="badge" style="background:var(--primary-light);color:var(--primary-color);"><i data-lucide="Users" style="width:0.75rem;height:0.75rem;display:inline;vertical-align:-1px;"></i> ${w.collaborators.length + 1}人</span>` : ''}
+              </div>
+              ${w.description ? `<p class="text-muted text-sm" style="margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${w.description}</p>` : ''}
+              <div style="display:flex;gap:var(--spacing-md);margin-top:var(--spacing-sm);font-size:0.8rem;color:var(--text-muted);">
+                <span>${w.characterCount || 0} 角色</span>
+                <span>${w.storyCount || 0} 故事</span>
+              </div>
+            </div>
+            <div class="card-footer" style="padding:var(--spacing-sm) var(--spacing-md);border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:var(--spacing-xs);">
+              <button class="btn btn-ghost btn-sm btn-icon" title="分享" onclick="event.stopPropagation();showShareModal('${w.$id || w.id}','${(w.name||'').replace(/'/g,"\\'")}')">
+                <i data-lucide="Share2"></i>
+              </button>
+              <button class="btn btn-ghost btn-sm btn-icon" title="编辑" onclick="event.stopPropagation();editWorld('${w.$id || w.id}')">
+                <i data-lucide="Edit"></i>
+              </button>
+              <button class="btn btn-ghost btn-sm btn-icon" style="color:var(--danger);" title="删除" onclick="event.stopPropagation();deleteWorldConfirm('${w.$id || w.id}','${w.name}')">
+                <i data-lucide="Trash2"></i>
+              </button>
+            </div>
+          </div>`).join('');
+        if (window.lucide) lucide.createIcons();
+      } catch (err) {
+        console.error('加载世界观失败:', err);
+        showNotification('加载世界观失败：' + err.message, 'error');
+      }
+    }
+    
+    // 显示创建世界观模态框
+    function showCreateWorldModal() {
+      document.getElementById('createWorldModal').classList.add('active');
+    }
+    
+    // 显示导入模态框
+    function showImportModal() {
+      document.getElementById('importModal').classList.add('active');
+    }
+    
+    // 关闭模态框
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // 显示分享模态框
+    let _shareWorldId = null;
+    function showShareModal(worldId, worldName) {
+      _shareWorldId = worldId;
+      document.getElementById('shareWorldName').textContent = '分享世界观：' + worldName;
+      document.getElementById('shareUserInput').value = '';
+      renderCollaboratorsList(worldId);
+      document.getElementById('shareModal').classList.add('active');
+    }
+
+    // 渲染当前协作者列表
+    async function renderCollaboratorsList(worldId) {
+      const container = document.getElementById('collaboratorsList');
+      try {
+        let world;
+        if (useCloud && window.API) {
+          world = await OCData.getWorld(worldId);
+        } else {
+          world = getWorld(worldId);
+        }
+        const collabs = (world && world.collaborators) || [];
+        if (collabs.length === 0) {
+          container.innerHTML = '<p class="text-muted text-sm" style="margin:0;">暂无协作者</p>';
+          return;
+        }
+        container.innerHTML = '<p style="margin:0 0 var(--spacing-xs);font-size:0.8rem;font-weight:500;color:var(--text-secondary);">当前协作者：</p>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          collabs.map(uid => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);">
+              <span style="font-size:0.85rem;color:var(--text-secondary);">
+                <i data-lucide="User" style="width:0.85rem;height:0.85rem;display:inline;vertical-align:-2px;margin-right:4px;"></i>
+                ${uid}
+              </span>
+              <button class="btn btn-ghost btn-sm btn-icon" title="移除" onclick="removeCollaborator('${uid}')" style="color:var(--danger);padding:2px;">
+                <i data-lucide="X" style="width:0.8rem;height:0.8rem;"></i>
+              </button>
+            </div>`).join('') + '</div>';
+        if (window.lucide) lucide.createIcons();
+      } catch(e) {
+        container.innerHTML = '';
+      }
+    }
+
+    // 邀请协作者
+    async function inviteCollaborator() {
+      const input = document.getElementById('shareUserInput');
+      const userId = input.value.trim();
+      if (!userId) {
+        showNotification('请输入用户 ID 或邮箱', 'warning');
+        return;
+      }
+      if (!_shareWorldId) return;
+
+      try {
+        await OCData.shareWorld(_shareWorldId, userId);
+        showNotification('已发送邀请', 'success');
+        input.value = '';
+        renderCollaboratorsList(_shareWorldId);
+        loadWorlds(); // 刷新卡片显示人数
+      } catch(e) {
+        showNotification('邀请失败：' + e.message, 'error');
+      }
+    }
+
+    // 移除协作者
+    async function removeCollaborator(userId) {
+      if (!_shareWorldId) return;
+      try {
+        await OCData.unshareWorld(_shareWorldId, userId);
+        showNotification('已移除协作者', 'success');
+        renderCollaboratorsList(_shareWorldId);
+        loadWorlds();
+      } catch(e) {
+        showNotification('移除失败：' + e.message, 'error');
+      }
+    }
+    
+    // 创建世界观
+    async function createWorld() {
+      const form = document.getElementById('createWorldForm');
+      const inputs = form.querySelectorAll('input, select, textarea');
+      const name = inputs[0].value.trim();
+      const type = inputs[1].value;
+      const tone = inputs[2].value;
+      const description = inputs[3].value.trim();
+
+      if (!name) {
+        showNotification('请填写世界观名称', 'warning');
+        return;
+      }
+
+      // 处理封面图片（可选，失败不影响创建）
+      let coverImage = null;
+      let coverFileId = null;
+      const fileInput = document.getElementById('worldCoverInput');
+      if (fileInput.files[0] && window.AppwriteAuth && window.APPWRITE_CONFIG?.projectId && window.APPWRITE_CONFIG.projectId !== 'YOUR_PROJECT_ID') {
+        try {
+          const loggedIn = await Promise.race([
+            OCData.isLoggedIn(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('登录检测超时')), 5000))
+          ]);
+          if (loggedIn) {
+            const result = await Promise.race([
+              window.API.storage.upload(fileInput.files[0]),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('封面上传超时')), 10000))
+            ]);
+            coverImage = result.url;
+            coverFileId = result.fileId;
+          }
+        } catch (e) {
+          console.warn('封面上传失败，使用本地预览:', e);
+        }
+      }
+
+      try {
+        // 带超时兜底，防止云端 SDK 卡死
+        await Promise.race([
+          OCData.createWorld({ name, type, tone, description, coverImage, coverFileId }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('创建超时，请重试')), 10000))
+        ]);
+        closeModal('createWorldModal');
+        form.reset();
+        showNotification('世界观创建成功！', 'success');
+        await loadWorlds();
+      } catch (err) {
+        console.error('创建世界观失败:', err);
+        showNotification('创建失败：' + err.message, 'error');
+      }
+    }
+    
+    // 删除世界观确认
+    async function deleteWorldConfirm(id, name) {
+      if (!confirm(`确认删除世界观「${name}」？\n此操作将同时删除该世界观下的所有角色和故事，且不可恢复。`)) return;
+      try {
+        await OCData.deleteWorld(id);
+        showNotification('已删除世界观', 'success');
+        await loadWorlds();
+      } catch (err) {
+        showNotification('删除失败：' + err.message, 'error');
+      }
+    }
+    
+    // 编辑世界观（占位，后续扩展）
+    function editWorld(id) {
+      showNotification('编辑功能开发中...', 'info');
+    }
+    
+    // 显示用户信息
+    async function showUserInfo() {
+      const user = await AppwriteAuth.getCurrentUser().catch(() => null);
+      if (user) alert(`当前用户：${user.name || ''}\n邮箱：${user.email}`);
+    }
+    
+    // 退出登录
+    async function doLogout() {
+      await OCData.logout();
+      showNotification('已退出登录', 'info');
+      await updateAuthUI();
+      await loadWorlds();
+    }
+    
+    // ---- 登录/注册模态框 ----
+    function showLoginModal() {
+      const el = document.getElementById('authModal');
+      if (el) el.classList.add('active');
+    }
+    
+    async function doLogin() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      if (!email || !password) { showNotification('请填写邮箱和密码', 'warning'); return; }
+      try {
+        await OCData.login(email, password);
+        closeModal('authModal');
+        showNotification('登录成功', 'success');
+        await updateAuthUI();
+        await loadWorlds();
+      } catch (e) {
+        showNotification('登录失败：' + (e.message || '请检查账号密码'), 'error');
+      }
+    }
+    
+    async function doRegister() {
+      const name = document.getElementById('authName')?.value.trim() || '';
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      if (!email || !password) { showNotification('请填写邮箱和密码', 'warning'); return; }
+      if (password.length < 8) { showNotification('密码至少8位', 'warning'); return; }
+      try {
+        await window.AppwriteAuth.register(email, password, name);
+        closeModal('authModal');
+        showNotification('注册成功，已自动登录', 'success');
+        await updateAuthUI();
+        await loadWorlds();
+      } catch (e) {
+        showNotification('注册失败：' + (e.message || '请重试'), 'error');
+      }
+    }
+    
+    let _authMode = 'login';
+    function switchAuthMode(mode) {
+      _authMode = mode;
+      document.getElementById('authLoginPane').style.display = mode === 'login' ? '' : 'none';
+      document.getElementById('authRegisterPane').style.display = mode === 'register' ? '' : 'none';
+      document.getElementById('authModalTitle').textContent = mode === 'login' ? '登录' : '注册';
+    }
+  </script>
+
+  <!-- 登录/注册模态框 -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="authModalTitle">登录</h3>
+        <button class="modal-close" onclick="closeModal('authModal')"><i data-lucide="X"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:8px;margin-bottom:var(--spacing-lg);">
+          <button class="btn btn-secondary" style="flex:1;" onclick="switchAuthMode('login')">登录</button>
+          <button class="btn btn-ghost" style="flex:1;" onclick="switchAuthMode('register')">注册</button>
+        </div>
+        <!-- 登录 -->
+        <div id="authLoginPane">
+          <div class="form-group">
+            <label class="form-label">邮箱</label>
+            <input type="email" class="form-input" id="authEmail" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">密码</label>
+            <input type="password" class="form-input" id="authPassword" placeholder="至少8位">
+          </div>
+        </div>
+        <!-- 注册 -->
+        <div id="authRegisterPane" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">昵称</label>
+            <input type="text" class="form-input" id="authName" placeholder="你的名字">
+          </div>
+          <div class="form-group">
+            <label class="form-label">邮箱</label>
+            <input type="email" class="form-input" id="authEmailReg" placeholder="your@email.com" oninput="document.getElementById('authEmail').value=this.value">
+          </div>
+          <div class="form-group">
+            <label class="form-label">密码（至少8位）</label>
+            <input type="password" class="form-input" id="authPasswordReg" placeholder="至少8位" oninput="document.getElementById('authPassword').value=this.value">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('authModal')">取消</button>
+        <button class="btn btn-primary" onclick="_authMode==='login'?doLogin():doRegister()">
+          <span id="authSubmitLabel">确认</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

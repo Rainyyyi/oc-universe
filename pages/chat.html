@@ -1,0 +1,533 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI聊天 - OC宇宙</title>
+  <!-- 主题初始化（必须最靠前） -->
+  <script>
+    try { var t = localStorage.getItem('oc_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); } catch(e) {}
+  </script>
+  <!-- 关键主题色 & 暗色变量（必须内联，防止闪白） -->
+  <style>
+    html, body { background-color: #FFFFFF; }
+    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
+    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+  </style>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/dark-mode.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    .chat-container {
+      display: flex;
+      height: calc(100vh - 64px);
+      margin-top: 64px;
+    }
+    .chat-sidebar {
+      width: 300px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-primary);
+    }
+    .chat-header {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+    .chat-messages {
+      flex: 1;
+      padding: var(--spacing-lg);
+      overflow-y: auto;
+    }
+    .chat-input-area {
+      padding: var(--spacing-md) var(--spacing-lg);
+      background-color: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+    }
+    .message {
+      display: flex;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+      animation: slideUp 0.3s ease-out;
+    }
+    .message.user {
+      flex-direction: row-reverse;
+    }
+    .message-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+    .message-content {
+      max-width: 70%;
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-radius: var(--radius-lg);
+      background-color: var(--bg-tertiary);
+    }
+    .message.user .message-content {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .message-meta {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: var(--spacing-xs);
+    }
+    .message.user .message-meta {
+      text-align: right;
+      color: rgba(255,255,255,0.7);
+    }
+    .character-select {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .conversation-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-md);
+    }
+    .conversation-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      margin-bottom: var(--spacing-xs);
+      transition: all var(--transition-fast);
+    }
+    .conversation-item:hover {
+      background-color: var(--bg-tertiary);
+    }
+    .conversation-item.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .conversation-item .last-message {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+    .conversation-item.active .last-message {
+      color: rgba(255,255,255,0.7);
+    }
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: var(--spacing-sm);
+    }
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+      animation: typing 1.4s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+    .chat-mode-tabs {
+      display: flex;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+    }
+    .chat-mode-tab {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      background-color: var(--bg-tertiary);
+    }
+    .chat-mode-tab:hover {
+      background-color: var(--border-color);
+    }
+    .chat-mode-tab.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .memory-panel {
+      position: fixed;
+      right: -400px;
+      top: 64px;
+      width: 400px;
+      height: calc(100vh - 64px);
+      background-color: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      z-index: 100;
+      transition: right var(--transition-normal);
+      display: flex;
+      flex-direction: column;
+    }
+    .memory-panel.open {
+      right: 0;
+    }
+    .memory-item {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+      font-size: var(--text-sm);
+    }
+    .memory-item .source {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: var(--spacing-xs);
+    }
+    @media (max-width: 768px) {
+      .chat-sidebar {
+        display: none;
+      }
+      .message-content {
+        max-width: 85%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <button class="navbar-toggle btn-ghost btn-icon" id="sidebarToggle">
+      <i data-lucide="Menu"></i>
+    </button>
+    <a href="../index.html" class="navbar-brand">
+      <span class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </span>
+      <span>OC宇宙</span>
+    </a>
+    <div class="navbar-menu">
+      <a href="../index.html">世界观</a>
+      <a href="characters.html">角色</a>
+      <a href="stories.html">故事</a>
+      <a href="chat.html" class="active">AI聊天</a>
+      <a href="relationship-map.html">关系图谱</a>
+    </div>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="Moon" class="icon-moon"></i>
+        <i data-lucide="Sun" class="icon-sun"></i>
+      </button>
+      <a href="admin.html" class="btn btn-primary btn-sm">
+        <i data-lucide="Settings"></i>
+        <span>管理后台</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- 聊天容器 -->
+  <div class="chat-container">
+    <!-- 左侧对话列表 -->
+    <aside class="chat-sidebar">
+      <div class="character-select">
+        <select class="form-input" id="chatCharacterSelect" onchange="selectCharacter(this.value)">
+          <option value="">选择角色开始聊天...</option>
+        </select>
+      </div>
+      
+      <div class="sidebar-section-title" style="padding: var(--spacing-md);">聊天模式</div>
+      <div style="padding: 0 var(--spacing-md);">
+        <div class="chat-mode-tabs" style="flex-direction: column;">
+          <div class="chat-mode-tab active" onclick="setChatMode('single', this)">
+            <i data-lucide="User"></i>
+            一对一聊天
+          </div>
+          <div class="chat-mode-tab" onclick="setChatMode('group', this)">
+            <i data-lucide="Users"></i>
+            多人群聊
+          </div>
+          <div class="chat-mode-tab" onclick="setChatMode('story', this)">
+            <i data-lucide="Clapperboard"></i>
+            剧情推演
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-section-title" style="padding: var(--spacing-md);">历史对话</div>
+      <div class="conversation-list" id="conversationList">
+        <div class="empty-state" style="padding: var(--spacing-lg); text-align: center;">
+          <p class="text-muted text-sm">暂无对话记录</p>
+        </div>
+      </div>
+      
+      <div style="padding: var(--spacing-md); border-top: 1px solid var(--border-color);">
+        <button class="btn btn-secondary" style="width: 100%;" onclick="clearChat()">
+          <i data-lucide="Trash2"></i>
+          清空对话
+        </button>
+      </div>
+    </aside>
+
+    <!-- 主聊天区 -->
+    <main class="chat-main" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+      <div style="margin-bottom: var(--spacing-xl);">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.3;">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </div>
+      <h2 style="margin-bottom: var(--spacing-md); color: var(--text-secondary);">AI 聊天功能</h2>
+      <p style="font-size: var(--text-lg); color: var(--text-muted); margin-bottom: var(--spacing-xl);">
+        <i data-lucide="Construction" style="width:1em;height:1em;vertical-align:middle;"></i>
+        正在开发中，敬请期待～
+      </p>
+      <a href="../index.html" class="btn btn-primary">
+        <i data-lucide="ArrowLeft"></i>
+        返回首页
+      </a>
+    </main>
+  </div>
+
+  <!-- 记忆面板 -->
+  <div class="memory-panel" id="memoryPanel">
+    <div class="card-header">
+      <h3 class="card-title">🧠 AI记忆库</h3>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="toggleMemoryPanel()">
+        <i data-lucide="X"></i>
+      </button>
+    </div>
+    <div style="padding: var(--spacing-md); border-bottom: 1px solid var(--border-color);">
+      <div class="tag-group">
+        <span class="tag tag-primary">档案</span>
+        <span class="tag">故事</span>
+        <span class="tag">日记</span>
+        <span class="tag">语录</span>
+        <span class="tag">评价</span>
+      </div>
+    </div>
+    <div style="flex: 1; overflow-y: auto;" id="memoryContent">
+      <div class="empty-state" style="padding: var(--spacing-xl); text-align: center;">
+        <p class="text-muted">暂无记忆数据</p>
+        <p class="text-sm text-muted" style="margin-top: var(--spacing-sm);">选择角色后，AI会自动学习该角色的档案、故事、日记等信息</p>
+      </div>
+    </div>
+    <div style="padding: var(--spacing-md); border-top: 1px solid var(--border-color);">
+      <div class="flex justify-between items-center">
+        <span class="text-sm text-muted">学习进度: 85%</span>
+        <button class="btn btn-secondary btn-sm">
+          <i data-lucide="RefreshCw"></i>
+          重新学习
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../js/app.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/chat-ai.js"></script>
+  <script>
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+      loadChatCharacters();
+    });
+    
+    // 加载聊天角色列表
+    function loadChatCharacters() {
+      const characters = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+      const select = document.getElementById('chatCharacterSelect');
+      
+      let options = '<option value="">选择角色开始聊天...</option>';
+      characters.forEach(char => {
+        options += `<option value="${char.id}">${char.name}</option>`;
+      });
+      select.innerHTML = options;
+    }
+    
+    // 设置聊天模式
+    function setChatMode(mode, element) {
+      document.querySelectorAll('.chat-mode-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      element.classList.add('active');
+    }
+    
+    // 选择角色
+    function selectCharacter(characterId) {
+      if (!characterId) return;
+      
+      // 获取角色信息
+      const characters = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+      const character = characters.find(c => c.id === characterId);
+      
+      if (!character) {
+        alert('角色不存在');
+        return;
+      }
+      
+      // 更新全局变量
+      currentCharacterId = characterId;
+      currentCharacterName = character.name;
+      
+      // 更新聊天头部
+      const chatHeader = document.getElementById('chatHeader');
+      chatHeader.innerHTML = `
+        <img src="${character.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + character.name}" alt="" class="avatar avatar-lg">
+        <div style="flex: 1;">
+          <h3 style="margin: 0;">${character.name}</h3>
+          <p class="text-sm text-muted" style="margin: 0;">${character.description || '点击开始对话'}</p>
+        </div>
+        <div class="flex gap-sm">
+          <button class="btn btn-ghost btn-icon" title="查看记忆" onclick="toggleMemoryPanel()">
+            <i data-lucide="Brain"></i>
+          </button>
+          <button class="btn btn-ghost btn-icon" title="导出对话">
+            <i data-lucide="Download"></i>
+          </button>
+          <button class="btn btn-ghost btn-icon" title="设置">
+            <i data-lucide="Settings"></i>
+          </button>
+        </div>
+      `;
+      
+      // 清空消息区域，显示提示
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML = `
+        <div style="text-align: center; margin-bottom: var(--spacing-xl);">
+          <span class="tag" style="background: var(--bg-tertiary);">
+            <i data-lucide="MessageSquare"></i>
+            与 ${character.name} 的对话
+          </span>
+        </div>
+        <div class="message" id="typingIndicator" style="display: none;">
+          <img src="${character.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + character.name}" alt="" class="message-avatar" id="typingAvatar">
+          <div>
+            <div class="message-content">
+              <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      console.log('Selected character:', character.name);
+    }
+    
+    // 发送消息
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      // 添加用户消息
+      addMessage(message, 'user');
+      input.value = '';
+      
+      // 显示正在输入
+      showTyping();
+      
+      // 模拟AI回复
+      setTimeout(function() {
+        hideTyping();
+        const reply = generateReply(message);
+        addMessage(reply, 'character');
+      }, 1500 + Math.random() * 1000);
+    }
+    
+    // 当前选中的角色
+    let currentCharacterId = null;
+    let currentCharacterName = '';
+    
+    // 添加消息
+    function addMessage(content, type) {
+      const container = document.getElementById('chatMessages');
+      const typingIndicator = document.getElementById('typingIndicator');
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message ' + (type === 'user' ? 'user' : '');
+      
+      const avatar = type === 'user'
+        ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'
+        : (currentCharacterId ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentCharacterId}` : '');
+      
+      const name = type === 'user' ? '你' : (currentCharacterName || '请选择角色');
+      const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      
+      messageDiv.innerHTML = `
+        <img src="${avatar}" alt="" class="message-avatar">
+        <div>
+          <div class="message-content">
+            <p style="margin: 0;">${content}</p>
+          </div>
+          <div class="message-meta">${name} · ${time}</div>
+        </div>
+      `;
+      
+      container.insertBefore(messageDiv, typingIndicator);
+      container.scrollTop = container.scrollHeight;
+    }
+    
+    // 显示正在输入
+    function showTyping() {
+      document.getElementById('typingIndicator').style.display = 'flex';
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    }
+    
+    // 隐藏正在输入
+    function hideTyping() {
+      document.getElementById('typingIndicator').style.display = 'none';
+    }
+    
+    // 生成回复
+    function generateReply(userMessage) {
+      const name = currentCharacterName || '角色';
+      return `✨ <b>${name}</b> 的 AI 对话功能正在开发中，敬请期待～`;
+    }
+    
+    // 处理按键
+    function handleKeyPress(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+    
+    // 切换记忆面板
+    function toggleMemoryPanel() {
+      document.getElementById('memoryPanel').classList.toggle('open');
+    }
+    
+    // 清空对话
+    function clearChat() {
+      if (confirm('确定要清空所有对话记录吗？')) {
+        document.getElementById('chatMessages').innerHTML = '';
+      }
+    }
+  </script>
+</body>
+</html>

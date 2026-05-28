@@ -1,0 +1,392 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>故事列表 - OC宇宙</title>
+  <!-- 主题初始化（必须最靠前） -->
+  <script>
+    try { var t = localStorage.getItem('oc_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); } catch(e) {}
+  </script>
+  <!-- 关键主题色 & 暗色变量（必须内联，防止闪白） -->
+  <style>
+    html, body { background-color: #FFFFFF; }
+    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
+    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+  </style>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/dark-mode.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <button class="navbar-toggle btn-ghost btn-icon" id="sidebarToggle">
+      <i data-lucide="Menu"></i>
+    </button>
+    <a href="../index.html" class="navbar-brand">
+      <span class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </span>
+      <span>OC宇宙</span>
+    </a>
+    <div class="navbar-menu">
+      <a href="../index.html">世界观</a>
+      <a href="characters.html">角色</a>
+      <a href="stories.html" class="active">故事</a>
+      <a href="chat.html">AI聊天</a>
+      <a href="relationship-map.html">关系图谱</a>
+    </div>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="Moon" class="icon-moon"></i>
+        <i data-lucide="Sun" class="icon-sun"></i>
+      </button>
+      <a href="admin.html" class="btn btn-primary btn-sm">
+        <i data-lucide="Settings"></i>
+        <span>管理后台</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- 侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="form-group" style="margin-bottom: 0;">
+        <input type="text" class="form-input" placeholder="搜索故事..." id="searchStory">
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="stories.html" class="sidebar-nav-item active">
+        <span class="icon"><i data-lucide="BookOpen"></i></span>
+        <span>全部故事</span>
+      </a>
+      <a href="#" class="sidebar-nav-item" onclick="filterStories('writing')">
+        <span class="icon"><i data-lucide="PenTool"></i></span>
+        <span>写作中</span>
+      </a>
+      <a href="#" class="sidebar-nav-item" onclick="filterStories('completed')">
+        <span class="icon"><i data-lucide="CheckCircle"></i></span>
+        <span>已完成</span>
+      </a>
+      <a href="#" class="sidebar-nav-item" onclick="filterStories('draft')">
+        <span class="icon"><i data-lucide="FileEdit"></i></span>
+        <span>草稿</span>
+      </a>
+    </nav>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">按世界观筛选</div>
+      <div id="worldFilterList">
+        <div class="empty-state" style="padding: var(--spacing-md); text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+          <p>暂无世界观</p>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">灵感碎片</div>
+      <a href="#" class="sidebar-nav-item" onclick="showInspirationModal()">
+        <span class="icon"><i data-lucide="Lightbulb"></i></span>
+        <span>未整理灵感</span>
+        <span class="tag tag-warning" style="margin-left: auto;">0</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="main-content">
+    <!-- 页面头部 -->
+    <header class="page-header">
+      <div class="page-title">
+        <h1>故事列表</h1>
+        <div class="breadcrumb">
+          <a href="../index.html">首页</a>
+          <span class="separator">/</span>
+          <span>故事列表</span>
+        </div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-secondary" onclick="showInspirationModal()">
+          <i data-lucide="Lightbulb"></i>
+          <span>灵感碎片</span>
+        </button>
+        <button class="btn btn-primary" onclick="showCreateStoryModal()">
+          <i data-lucide="Plus"></i>
+          <span>创建新故事</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 统计卡片 -->
+    <section style="margin-bottom: var(--spacing-xl);">
+      <div class="grid-cards" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: var(--spacing-sm); color: var(--primary-color);"><i data-lucide="BookOpen" style="width:1em;height:1em;"></i></div>
+            <div style="font-size: var(--text-3xl); font-weight: 700; color: var(--primary-color);">0</div>
+            <div class="text-muted">总故事</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: var(--spacing-sm); color: var(--warning-color);"><i data-lucide="PenTool" style="width:1em;height:1em;"></i></div>
+            <div style="font-size: var(--text-3xl); font-weight: 700; color: var(--warning-color);">0</div>
+            <div class="text-muted">写作中</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: var(--spacing-sm); color: var(--success-color);"><i data-lucide="CheckCircle" style="width:1em;height:1em;"></i></div>
+            <div style="font-size: var(--text-3xl); font-weight: 700; color: var(--success-color);">0</div>
+            <div class="text-muted">已完成</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: var(--spacing-sm); color: var(--info-color);"><i data-lucide="FileEdit" style="width:1em;height:1em;"></i></div>
+            <div style="font-size: var(--text-3xl); font-weight: 700; color: var(--info-color);">0</div>
+            <div class="text-muted">总字数</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 筛选栏 -->
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-body">
+        <div class="flex gap-lg items-center" style="flex-wrap: wrap;">
+          <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+            <input type="text" class="form-input" placeholder="搜索故事标题、内容...">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <select class="form-input" id="filterWorld">
+              <option value="">全部世界观</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <select class="form-input">
+              <option value="">全部状态</option>
+              <option value="writing">写作中</option>
+              <option value="completed">已完成</option>
+              <option value="draft">草稿</option>
+            </select>
+          </div>
+          <button class="btn btn-primary">
+            <i data-lucide="Search"></i>
+            搜索
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 故事列表 -->
+    <section>
+      <div class="flex justify-between items-center" style="margin-bottom: var(--spacing-lg);">
+        <div class="text-muted" id="storyCount">
+          共 <strong>0</strong> 个故事（点击下方卡片创建新故事）
+        </div>
+        <div class="flex gap-sm">
+          <select class="form-input" style="width: auto;">
+            <option value="recent">最近更新</option>
+            <option value="name">名称排序</option>
+            <option value="words">字数排序</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="grid-cards" id="storiesList">
+        <!-- 添加新故事卡片 -->
+        <div class="card card-clickable animate-slideUp" onclick="showCreateStoryModal()" style="border: 2px dashed var(--border-color); background: transparent;">
+          <div class="card-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
+            <div style="font-size: 3rem; color: var(--text-muted); margin-bottom: var(--spacing-md);">
+              <i data-lucide="Plus"></i>
+            </div>
+            <p class="text-muted">创建新故事</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 创建故事模态框 -->
+  <div class="modal-overlay" id="createStoryModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">📖 创建新故事</h3>
+        <button class="modal-close" onclick="closeModal('createStoryModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createStoryForm">
+          <div class="form-group">
+            <label class="form-label required">故事标题</label>
+            <input type="text" class="form-input" placeholder="输入故事标题..." required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">所属世界观</label>
+              <select class="form-input" id="storyWorldSelect" required>
+                <option value="">选择世界观...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">故事类型</label>
+              <select class="form-input">
+                <option value="">选择类型...</option>
+                <option value="epic">史诗</option>
+                <option value="adventure">冒险</option>
+                <option value="romance">爱情</option>
+                <option value="mystery">悬疑</option>
+                <option value="tragedy">悲剧</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">故事梗概</label>
+            <textarea class="form-input form-textarea" placeholder="简述故事的主要情节..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">出场角色</label>
+            <div class="tag-group" style="padding: var(--spacing-md); background: var(--bg-tertiary); border-radius: var(--radius-md);">
+              <span class="text-muted text-sm">点击添加角色...</span>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('createStoryModal')">取消</button>
+        <button class="btn btn-primary" onclick="createStory()">
+          <i data-lucide="Plus"></i>
+          创建故事
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 灵感碎片模态框 -->
+  <div class="modal-overlay" id="inspirationModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">💡 灵感碎片</h3>
+        <button class="modal-close" onclick="closeModal('inspirationModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="flex gap-md" style="margin-bottom: var(--spacing-lg);">
+          <input type="text" class="form-input" placeholder="记录你的灵感..." style="flex: 1;">
+          <button class="btn btn-primary">
+            <i data-lucide="Plus"></i>
+            添加
+          </button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-md);">
+          <div class="empty-state" style="grid-column: span 2; padding: var(--spacing-xl); text-align: center;">
+            <p class="text-muted">暂无灵感碎片，点击上方添加按钮记录你的灵感</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../js/app.js"></script>
+  <script src="../js/data.js"></script>
+  <script>
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+    });
+    
+    // 显示创建故事模态框
+    function showCreateStoryModal() {
+      document.getElementById('createStoryModal').classList.add('active');
+    }
+    
+    // 显示灵感碎片模态框
+    function showInspirationModal() {
+      document.getElementById('inspirationModal').classList.add('active');
+    }
+    
+    // 关闭模态框
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+    
+    // 创建故事
+    function createStory() {
+      alert('故事创建成功！');
+      closeModal('createStoryModal');
+    }
+    
+    // 筛选故事
+    function filterStories(status) {
+      // 获取所有故事
+      const stories = JSON.parse(localStorage.getItem('oc_stories') || '[]');
+      
+      let filteredStories = stories;
+      
+      // 如果指定了状态，则筛选该状态的故事
+      if (status) {
+        filteredStories = stories.filter(s => s.status === status);
+      }
+      
+      // 更新故事列表显示
+      const storiesList = document.getElementById('storiesList');
+      if (!storiesList) {
+        console.log('Filtered by status:', status, 'Total:', filteredStories.length);
+        return;
+      }
+      
+      if (filteredStories.length === 0) {
+        storiesList.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1; padding: var(--spacing-xxl) var(--spacing-lg); text-align: center;">
+            <div style="font-size: 4rem; margin-bottom: var(--spacing-lg);">📖</div>
+            <h3 style="margin-bottom: var(--spacing-sm);">${status ? '暂无该状态的故事' : '还没有创建任何故事'}</h3>
+            <p class="text-muted" style="margin-bottom: var(--spacing-lg);">${status ? '创建新故事吧' : '创建你的第一个故事，开始构建你的原创宇宙'}</p>
+            <button class="btn btn-primary btn-lg" onclick="showCreateStoryModal()">
+              <i data-lucide="Plus"></i>
+              <span>创建第一个故事</span>
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+      // 渲染故事卡片
+      storiesList.innerHTML = filteredStories.map(story => `
+        <div class="card story-card" onclick="viewStory('${story.id}')">
+          <div class="card-body">
+            <h3 style="margin-bottom: var(--spacing-xs);">${story.title}</h3>
+            <p class="text-muted text-sm">${story.description || '暂无描述'}</p>
+            <div style="margin-top: var(--spacing-sm); display: flex; gap: var(--spacing-sm);">
+              <span class="tag tag-${story.status === 'completed' ? 'success' : story.status === 'writing' ? 'primary' : 'warning'}">
+                ${story.status === 'completed' ? '已完成' : story.status === 'writing' ? '写作中' : '草稿'}
+              </span>
+              <span class="text-muted text-sm">${story.wordCount || 0} 字</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      // 更新侧边栏选中状态
+      document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('onclick')?.includes(`filterStories('${status}')`)) {
+          item.classList.add('active');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

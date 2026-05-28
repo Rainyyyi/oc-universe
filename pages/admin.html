@@ -1,0 +1,695 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - OC宇宙</title>
+  <!-- 主题初始化（必须最靠前） -->
+  <script>
+    try { var t = localStorage.getItem('oc_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); } catch(e) {}
+  </script>
+  <!-- 关键主题色 & 暗色变量（必须内联，防止闪白） -->
+  <style>
+    html, body { background-color: #FFFFFF; }
+    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
+    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+  </style>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/dark-mode.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    /* 登录界面样式 */
+    .login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0c1a3a 0%, #0f2744 50%, #0a1628 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .login-overlay.hidden {
+      display: none;
+    }
+    .login-container {
+      background: var(--bg-primary, #1e1e2e);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-logo {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+    .login-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-primary, #fff);
+    }
+    .login-subtitle {
+      color: var(--text-secondary, #888);
+      margin-bottom: 30px;
+    }
+    .login-form {
+      text-align: left;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-secondary, #888);
+      font-size: 0.9rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color, #333);
+      border-radius: 10px;
+      background: var(--bg-tertiary, #2a2a3e);
+      color: var(--text-primary, #fff);
+      font-size: 1rem;
+      transition: border-color 0.3s;
+      box-sizing: border-box;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary-color, #6c5ce7);
+    }
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.4);
+    }
+    .login-error {
+      color: #ff6b6b;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .login-hint {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--bg-tertiary, #2a2a3e);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #888);
+    }
+    .admin-container {
+      display: flex;
+      min-height: calc(100vh - 64px);
+      margin-top: 64px;
+    }
+    .admin-sidebar {
+      width: 260px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      padding: var(--spacing-md);
+    }
+    .admin-main {
+      flex: 1;
+      padding: var(--spacing-xl);
+      background-color: var(--bg-primary);
+      overflow-y: auto;
+    }
+    .admin-nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      cursor: pointer;
+      margin-bottom: var(--spacing-xs);
+      transition: all var(--transition-fast);
+    }
+    .admin-nav-item:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .admin-nav-item.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: white;
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-xl);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+    .stat-card.secondary {
+      background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
+    }
+    .stat-card.success {
+      background: linear-gradient(135deg, #059669 0%, #34D399 100%);
+    }
+    .stat-card.warning {
+      background: linear-gradient(135deg, #D97706 0%, #FBBF24 100%);
+    }
+    .activity-item {
+      display: flex;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .quick-action {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-lg);
+      background-color: var(--bg-tertiary);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .quick-action:hover {
+      background-color: var(--border-color);
+      transform: translateY(-2px);
+    }
+    .quick-action i {
+      font-size: 1.5rem;
+      margin-bottom: var(--spacing-sm);
+      color: var(--primary-color);
+    }
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      background-color: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-sm);
+    }
+    .progress-bar {
+      height: 8px;
+      background-color: var(--bg-tertiary);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      border-radius: var(--radius-full);
+      transition: width var(--transition-normal);
+    }
+    @media (max-width: 1024px) {
+      .admin-sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 登录界面 -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-container">
+      <div class="login-logo">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #2563EB;">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </div>
+      <h1 class="login-title">管理员登录</h1>
+      <p class="login-subtitle">OC宇宙 - 管理后台</p>
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="loginUsername" placeholder="请输入用户名" required>
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="loginPassword" placeholder="请输入密码" required>
+        </div>
+        <button type="submit" class="login-btn">
+          <i data-lucide="LogIn"></i> 登录
+        </button>
+        <p class="login-error" id="loginError">用户名或密码错误</p>
+      </form>
+      <div class="login-hint">
+        <i data-lucide="Info"></i> 默认账号: admin / admin123
+      </div>
+    </div>
+  </div>
+
+  <!-- 主内容区（登录后显示） -->
+  <div id="adminContent" style="display: none;">
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <button class="navbar-toggle btn-ghost btn-icon" id="sidebarToggle">
+      <i data-lucide="Menu"></i>
+    </button>
+    <a href="../index.html" class="navbar-brand">
+      <span class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </span>
+      <span>OC宇宙</span>
+    </a>
+    <div class="navbar-menu">
+      <a href="../index.html">世界观</a>
+      <a href="characters.html">角色</a>
+      <a href="stories.html">故事</a>
+      <a href="chat.html">AI聊天</a>
+      <a href="relationship-map.html">关系图谱</a>
+    </div>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="Moon" class="icon-moon"></i>
+        <i data-lucide="Sun" class="icon-sun"></i>
+      </button>
+      <a href="admin.html" class="btn btn-primary btn-sm">
+        <i data-lucide="Settings"></i>
+        <span>管理后台</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- 管理后台容器 -->
+  <div class="admin-container">
+    <!-- 侧边导航 -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-section-title">管理导航</div>
+      <nav>
+        <div class="admin-nav-item active" onclick="switchAdminTab('dashboard')">
+          <i data-lucide="LayoutDashboard"></i>
+          <span>仪表盘</span>
+        </div>
+        <div class="admin-nav-item" onclick="switchAdminTab('characters')">
+          <i data-lucide="Users"></i>
+          <span>角色管理</span>
+        </div>
+        <div class="admin-nav-item" onclick="switchAdminTab('stories')">
+          <i data-lucide="BookOpen"></i>
+          <span>故事管理</span>
+        </div>
+        <div class="admin-nav-item" onclick="switchAdminTab('members')">
+          <i data-lucide="UserPlus"></i>
+          <span>成员管理</span>
+        </div>
+        <div class="admin-nav-item" onclick="switchAdminTab('media')">
+          <i data-lucide="Image"></i>
+          <span>媒体库</span>
+        </div>
+        <div class="admin-nav-item" onclick="switchAdminTab('backup')">
+          <i data-lucide="Database"></i>
+          <span>备份导出</span>
+        </div>
+      </nav>
+      
+      <div class="sidebar-section" style="margin-top: auto;">
+        <div class="sidebar-section-title">系统设置</div>
+        <div class="admin-nav-item">
+          <i data-lucide="Settings"></i>
+          <span>全局设置</span>
+        </div>
+        <div class="admin-nav-item">
+          <i data-lucide="Palette"></i>
+          <span>主题设置</span>
+        </div>
+        <div class="admin-nav-item">
+          <i data-lucide="Bot"></i>
+          <span>AI配置</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="admin-main">
+      <!-- 仪表盘 -->
+      <div id="tab-dashboard">
+        <header class="page-header" style="border-bottom: none; margin-bottom: var(--spacing-lg);">
+          <div class="page-title">
+            <h1>👑 管理后台</h1>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary">
+              <i data-lucide="RefreshCw"></i>
+              刷新数据
+            </button>
+          </div>
+        </header>
+
+        <!-- 统计卡片 -->
+        <section style="margin-bottom: var(--spacing-xl);" id="statsSection">
+          <div class="grid-cards" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stat-card">
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: var(--text-4xl); font-weight: 700;" id="statWorlds">0</div>
+                <div style="opacity: 0.9;">世界观</div>
+              </div>
+            </div>
+            <div class="stat-card secondary">
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: var(--text-4xl); font-weight: 700;" id="statCharacters">0</div>
+                <div style="opacity: 0.9;">角色</div>
+              </div>
+            </div>
+            <div class="stat-card success">
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: var(--text-4xl); font-weight: 700;" id="statStories">0</div>
+                <div style="opacity: 0.9;">故事</div>
+              </div>
+            </div>
+            <div class="stat-card warning">
+              <div style="position: relative; z-index: 1;">
+                <div style="font-size: var(--text-4xl); font-weight: 700;" id="statWords">0</div>
+                <div style="opacity: 0.9;">总字数</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid-cards" style="grid-template-columns: 2fr 1fr;">
+          <!-- 快捷操作 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">⚡ 快捷操作</h3>
+            </div>
+            <div class="card-body">
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacing-md);">
+                <div class="quick-action" onclick="window.location.href='characters.html'">
+                  <i data-lucide="UserPlus"></i>
+                  <span class="text-sm">创建角色</span>
+                </div>
+                <div class="quick-action" onclick="window.location.href='stories.html'">
+                  <i data-lucide="PenTool"></i>
+                  <span class="text-sm">写故事</span>
+                </div>
+                <div class="quick-action" onclick="window.location.href='chat.html'">
+                  <i data-lucide="MessageSquare"></i>
+                  <span class="text-sm">AI聊天</span>
+                </div>
+                <div class="quick-action" onclick="showImportModal()">
+                  <i data-lucide="Upload"></i>
+                  <span class="text-sm">导入数据</span>
+                </div>
+                <div class="quick-action" onclick="exportAll()">
+                  <i data-lucide="Download"></i>
+                  <span class="text-sm">导出备份</span>
+                </div>
+                <div class="quick-action" onclick="window.location.href='relationship-map.html'">
+                  <i data-lucide="GitBranch"></i>
+                  <span class="text-sm">关系图谱</span>
+                </div>
+                <div class="quick-action">
+                  <i data-lucide="Brain"></i>
+                  <span class="text-sm">训练AI</span>
+                </div>
+                <div class="quick-action">
+                  <i data-lucide="BarChart3"></i>
+                  <span class="text-sm">数据统计</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI学习进度 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">🤖 AI学习进度</h3>
+            </div>
+            <div class="card-body" id="aiProgressList">
+              <div class="empty-state" style="padding: var(--spacing-lg); text-align: center; color: var(--text-muted);">
+                <p>暂无角色数据</p>
+                <p class="text-sm">创建角色后会自动显示学习进度</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 最近活动 -->
+        <div class="card" style="margin-top: var(--spacing-xl);">
+          <div class="card-header">
+            <h3 class="card-title">📋 最近活动</h3>
+          </div>
+          <div class="card-body" style="padding: 0;" id="activityList">
+            <div class="empty-state" style="padding: var(--spacing-xl); text-align: center; color: var(--text-muted);">
+              <p>暂无活动记录</p>
+              <p class="text-sm">创建角色、故事或开始聊天后会显示活动</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 成员管理（隐藏的标签页） -->
+      <div id="tab-members" style="display: none;">
+        <header class="page-header">
+          <div class="page-title">
+            <h1>👥 成员管理</h1>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary">
+              <i data-lucide="UserPlus"></i>
+              邀请成员
+            </button>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="empty-state" style="padding: var(--spacing-xl); text-align: center; color: var(--text-muted);">
+              <p>暂无成员数据</p>
+              <p class="text-sm">创建角色后会显示相关信息</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 备份导出（隐藏的标签页） -->
+      <div id="tab-backup" style="display: none;">
+        <header class="page-header">
+          <div class="page-title">
+            <h1>💾 备份与导出</h1>
+          </div>
+        </header>
+
+        <div class="grid-cards">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📤 导出数据</h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted" style="margin-bottom: var(--spacing-lg);">将所有数据导出为JSON文件，可用于备份或迁移。</p>
+              <div class="flex gap-md">
+                <button class="btn btn-primary" onclick="exportAll()">
+                  <i data-lucide="Download"></i>
+                  导出全部数据
+                </button>
+                <button class="btn btn-secondary">
+                  <i data-lucide="FileCode"></i>
+                  仅导出角色
+                </button>
+                <button class="btn btn-secondary">
+                  <i data-lucide="BookOpen"></i>
+                  仅导出故事
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📥 导入数据</h3>
+            </div>
+            <div class="card-body">
+              <p class="text-muted" style="margin-bottom: var(--spacing-lg);">从JSON文件导入数据，可选择覆盖或合并现有数据。</p>
+              <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-lg); padding: var(--spacing-xl); text-align: center; cursor: pointer;">
+                <i data-lucide="CloudUpload" style="font-size: 2rem; color: var(--text-muted); margin-bottom: var(--spacing-md);"></i>
+                <p class="text-muted">点击或拖拽文件到此处</p>
+                <p class="text-sm text-muted">支持 .json 格式</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: var(--spacing-xl);">
+          <div class="card-header">
+            <h3 class="card-title">📜 备份历史</h3>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>备份时间</th>
+                  <th>类型</th>
+                  <th>大小</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="backupHistoryBody">
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted); padding: var(--spacing-lg);">暂无备份记录</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../js/app.js"></script>
+  <script src="../js/data.js"></script>
+  <script>
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+      loadRealStats();
+    });
+
+    // 加载真实统计数据
+    async function loadRealStats() {
+      const stats = OCData.getStats();
+      document.getElementById('statWorlds').textContent = stats.worlds;
+      document.getElementById('statCharacters').textContent = stats.characters;
+      document.getElementById('statStories').textContent = stats.stories;
+      const words = stats.totalWords;
+      document.getElementById('statWords').textContent = words >= 1000 ? (words / 1000).toFixed(1) + 'K' : words;
+    }
+    
+    // 切换管理标签页
+    function switchAdminTab(tab) {
+      // 隐藏所有标签页
+      document.querySelectorAll('[id^="tab-"]').forEach(el => {
+        el.style.display = 'none';
+      });
+      
+      // 显示选中的标签页
+      const tabElement = document.getElementById('tab-' + tab);
+      if (tabElement) {
+        tabElement.style.display = 'block';
+      } else {
+        document.getElementById('tab-dashboard').style.display = 'block';
+      }
+      
+      // 更新导航状态
+      document.querySelectorAll('.admin-nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.target.closest('.admin-nav-item').classList.add('active');
+    }
+    
+    // 导出全部数据
+    function exportAll() {
+      const data = {
+        exportTime: new Date().toISOString(),
+        worlds: getWorlds(),
+        characters: getCharacters(),
+        stories: getStories(),
+        relations: getRelations()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `oc-universe-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      alert('数据导出成功！');
+    }
+    
+    // 显示导入模态框
+    function showImportModal() {
+      alert('打开导入对话框');
+    }
+  </script>
+  
+  <!-- 登录验证脚本 -->
+  <script>
+    // 页面加载时检查登录状态
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginOverlay = document.getElementById('loginOverlay');
+      const adminContent = document.getElementById('adminContent');
+      const loginForm = document.getElementById('loginForm');
+      const loginError = document.getElementById('loginError');
+      
+      // 检查是否已登录
+      if (typeof OCData !== 'undefined' && OCData.isLoggedIn()) {
+        loginOverlay.classList.add('hidden');
+        adminContent.style.display = 'block';
+      } else {
+        loginOverlay.classList.remove('hidden');
+        adminContent.style.display = 'none';
+      }
+      
+      // 登录表单提交
+      if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          
+          const username = document.getElementById('loginUsername').value;
+          const password = document.getElementById('loginPassword').value;
+          
+          if (typeof OCData !== 'undefined' && OCData.login(username, password)) {
+            // 登录成功
+            loginOverlay.classList.add('hidden');
+            adminContent.style.display = 'block';
+            loginError.style.display = 'none';
+          } else {
+            // 登录失败
+            loginError.style.display = 'block';
+          }
+        });
+      }
+    });
+  </script>
+  </div>
+</body>
+</html>

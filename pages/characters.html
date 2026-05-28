@@ -1,0 +1,793 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>角色列表 - OC宇宙</title>
+  <!-- 主题初始化（必须最靠前） -->
+  <script>
+    try { var t = localStorage.getItem('oc_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); } catch(e) {}
+  </script>
+  <!-- 关键主题色 & 暗色变量（必须内联，防止闪白） -->
+  <style>
+    html, body { background-color: #FFFFFF; }
+    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
+    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+  </style>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/dark-mode.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <button class="navbar-toggle btn-ghost btn-icon" id="sidebarToggle">
+      <i data-lucide="Menu"></i>
+    </button>
+    <a href="../index.html" class="navbar-brand">
+      <span class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="9" ry="2.5" stroke="currentColor" stroke-width="1" transform="rotate(-25 12 12)"/>
+          <circle cx="19" cy="7" r="1.5" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </span>
+      <span>OC宇宙</span>
+    </a>
+    <div class="navbar-menu">
+      <a href="../index.html">世界观</a>
+      <a href="characters.html" class="active">角色</a>
+      <a href="stories.html">故事</a>
+      <a href="chat.html">AI聊天</a>
+      <a href="relationship-map.html">关系图谱</a>
+    </div>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="Moon" class="icon-moon"></i>
+        <i data-lucide="Sun" class="icon-sun"></i>
+      </button>
+      <a href="admin.html" class="btn btn-primary btn-sm">
+        <i data-lucide="Settings"></i>
+        <span>管理后台</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- 侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="form-group" style="margin-bottom: 0;">
+        <input type="text" class="form-input" placeholder="搜索角色..." id="searchCharacter">
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="characters.html" class="sidebar-nav-item active" onclick="filterCharacters('')">
+        <span class="icon"><i data-lucide="Users"></i></span>
+        <span>全部角色</span>
+      </a>
+      <!-- 用户自定义分类将通过JS动态生成 -->
+      <div id="customCategoriesList"></div>
+      <a href="#" class="sidebar-nav-item" onclick="showCreateCategoryModal()" style="color: var(--primary-color);">
+        <span class="icon"><i data-lucide="Plus"></i></span>
+        <span>添加分类</span>
+      </a>
+    </nav>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">按世界观筛选</div>
+      <div id="worldFilterList">
+        <div class="empty-state" style="padding: var(--spacing-md); text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+          <p>暂无世界观</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="main-content">
+    <!-- 页面头部 -->
+    <header class="page-header">
+      <div class="page-title">
+        <h1>角色列表</h1>
+        <div class="breadcrumb">
+          <a href="../index.html">首页</a>
+          <span class="separator">/</span>
+          <span>角色列表</span>
+        </div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-secondary" onclick="showImportModal()">
+          <i data-lucide="Upload"></i>
+          <span>批量导入</span>
+        </button>
+        <button class="btn btn-secondary" onclick="showDiaryModalPrompt()">
+          <i data-lucide="BookOpen"></i>
+          <span>日记管理</span>
+        </button>
+        <button class="btn btn-primary" onclick="showCreateCharacterModal()">
+          <i data-lucide="Plus"></i>
+          <span>创建新角色</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 筛选栏 -->
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-body">
+        <div class="flex gap-lg items-center" style="flex-wrap: wrap;">
+          <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+            <input type="text" class="form-input" placeholder="搜索角色名称、描述...">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <select class="form-input" id="filterWorld">
+              <option value="">全部世界观</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <select class="form-input">
+              <option value="">全部角色类型</option>
+              <option value="protagonist">主角</option>
+              <option value="antagonist">反派</option>
+              <option value="supporting">配角</option>
+            </select>
+          </div>
+          <button class="btn btn-primary">
+            <i data-lucide="Search"></i>
+            搜索
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分类快捷胶囊 -->
+    <div class="category-pills-bar" id="categoryPillsBar" style="display: none; margin-bottom: var(--spacing-lg); overflow-x: auto; padding-bottom: 4px;">
+      <div class="category-pills" id="categoryPills" style="display: flex; gap: var(--spacing-sm); flex-wrap: nowrap; min-width: max-content;">
+        <button class="category-pill active" onclick="filterCharactersByPill('')" data-pill="">
+          <i data-lucide="Layers"></i>
+          <span>全部</span>
+        </button>
+        <!-- 动态生成分类胶囊 -->
+      </div>
+    </div>
+
+    <!-- 角色列表 -->
+    <section class="characters-section">
+      <div class="flex justify-between items-center" style="margin-bottom: var(--spacing-lg);">
+        <div class="text-muted" id="characterCount">
+          共 <strong>0</strong> 个角色
+        </div>
+        <div class="flex gap-sm">
+          <select class="form-input" style="width: auto;">
+            <option value="recent">最近更新</option>
+            <option value="name">名称排序</option>
+            <option value="stories">故事数量</option>
+          </select>
+          <button class="btn btn-ghost btn-icon active" title="网格视图">
+            <i data-lucide="LayoutGrid"></i>
+          </button>
+          <button class="btn btn-ghost btn-icon" title="列表视图">
+            <i data-lucide="List"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="grid-cards" id="charactersList">
+        <!-- 空状态：分步引导 -->
+        <div class="characters-empty-guide" style="grid-column: 1 / -1;">
+          <div class="empty-guide-header">
+            <div class="empty-guide-icon">
+              <i data-lucide="sparkles"></i>
+            </div>
+            <h3>还没有角色</h3>
+            <p class="text-muted">先创建世界观，再为它添加角色吧</p>
+          </div>
+          <div class="empty-guide-steps">
+            <div class="guide-step">
+              <div class="guide-step-num">01</div>
+              <div class="guide-step-content">
+                <div class="guide-step-icon"><i data-lucide="globe"></i></div>
+                <h4>创建世界观</h4>
+                <p>先在首页建立你的世界背景与设定，为角色提供舞台</p>
+                <a href="../index.html" class="btn btn-ghost btn-sm">
+                  <i data-lucide="arrow-right"></i>
+                  去创建
+                </a>
+              </div>
+            </div>
+            <div class="guide-step-arrow"><i data-lucide="chevron-right"></i></div>
+            <div class="guide-step">
+              <div class="guide-step-num">02</div>
+              <div class="guide-step-content">
+                <div class="guide-step-icon"><i data-lucide="user-plus"></i></div>
+                <h4>添加角色</h4>
+                <p>为你的世界赋予灵魂，设计独特的人物形象与性格</p>
+                <button class="btn btn-primary btn-sm" onclick="showCreateCharacterModal()">
+                  <i data-lucide="plus"></i>
+                  创建角色
+                </button>
+              </div>
+            </div>
+            <div class="guide-step-arrow"><i data-lucide="chevron-right"></i></div>
+            <div class="guide-step">
+              <div class="guide-step-num">03</div>
+              <div class="guide-step-content">
+                <div class="guide-step-icon"><i data-lucide="message-circle"></i></div>
+                <h4>与角色对话</h4>
+                <p>通过AI聊天功能，让角色开口说话，探索更多可能</p>
+                <a href="chat.html" class="btn btn-ghost btn-sm">
+                  <i data-lucide="arrow-right"></i>
+                  去聊天
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 创建角色模态框 -->
+  <div class="modal-overlay" id="createCharacterModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">👤 创建新角色</h3>
+        <button class="modal-close" onclick="closeModal('createCharacterModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createCharacterForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">角色名称</label>
+              <input type="text" class="form-input" placeholder="输入角色名称..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">所属世界观</label>
+              <select class="form-input" id="characterWorldSelect" required>
+                <option value="">选择世界观...</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-lg);">
+            <div class="form-group">
+              
+            </div>
+            <div class="form-group">
+              <label class="form-label">年龄</label>
+              <input type="number" class="form-input" placeholder="年龄">
+            </div>
+            <div class="form-group">
+              <label class="form-label">性别</label>
+              <select class="form-input">
+                <option value="">选择性别...</option>
+                <option value="male">男</option>
+                <option value="female">女</option>
+                <option value="other">其他</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">角色分类</label>
+            <select class="form-input" id="charCategory">
+              <option value="">选择分类...</option>
+              <!-- 分类将通过JS动态加载 -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">性格标签</label>
+            <input type="text" class="form-input" placeholder="用逗号分隔，如：勇敢,正义,善良">
+          </div>
+          <div class="form-group">
+            <label class="form-label">角色简介</label>
+            <textarea class="form-input form-textarea" placeholder="描述角色的背景故事..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">头像</label>
+            <div style="display: flex; gap: var(--spacing-lg); align-items: center;">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=default" alt="" class="avatar avatar-xl" id="avatarPreview">
+              <div>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('avatarInput').click()">
+                  <i data-lucide="Upload"></i>
+                  上传头像
+                </button>
+                <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                <p class="form-hint">支持 JPG、PNG 格式，建议 200x200 像素</p>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('createCharacterModal')">取消</button>
+        <button class="btn btn-primary" onclick="createCharacter()">
+          <i data-lucide="Plus"></i>
+          创建角色
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 日记模态框 -->
+  <div class="modal-overlay" id="diaryModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">日记管理</h3>
+        <button class="modal-close" onclick="closeModal('diaryModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- 添加日记表单 -->
+        <div class="card" style="margin-bottom: var(--spacing-lg);">
+          <h4 style="margin-bottom: var(--spacing-md);">写新日记</h4>
+          <div class="form-group">
+            <label class="form-label">日记标题</label>
+            <input type="text" class="form-input" id="diaryTitle" placeholder="输入日记标题...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">日记内容</label>
+            <textarea class="form-input form-textarea" id="diaryContent" rows="4" placeholder="写下今天发生的事情..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">心情</label>
+            <select class="form-input" id="diaryMood">
+              <option value="">选择心情...</option>
+              <option value="happy">😊 开心</option>
+              <option value="sad">😢 难过</option>
+              <option value="angry">😠 生气</option>
+              <option value="surprised">😮 惊讶</option>
+              <option value="calm">😌 平静</option>
+              <option value="anxious">😰 焦虑</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-checkbox">
+              <input type="checkbox" id="diaryForAI">
+              <span class="checkbox-custom"></span>
+              <span>📚 供AI学习 - 勾选后AI会学习这篇日记来更好地模仿角色说话风格</span>
+            </label>
+            <p class="form-hint">不勾选则日记仅用于个人记录，不会用于AI聊天</p>
+          </div>
+          <button class="btn btn-primary" onclick="addDiary()">
+            <i data-lucide="Plus"></i>
+            添加日记
+          </button>
+        </div>
+        
+        <!-- 日记列表 -->
+        <div id="diaryList">
+          <div class="empty-state">
+            <p>暂无日记</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建分类模态框 -->
+  <div class="modal-overlay" id="createCategoryModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">➕ 创建角色分类</h3>
+        <button class="modal-close" onclick="closeModal('createCategoryModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createCategoryForm">
+          <div class="form-group">
+            <label class="form-label required">分类名称</label>
+            <input type="text" class="form-input" id="categoryName" placeholder="输入分类名称，如：主角、配角、反派等" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">分类图标</label>
+            <select class="form-input" id="categoryIcon">
+              <option value="⭐">⭐ 星星</option>
+              <option value="👑">👑 皇冠</option>
+              <option value="💪">💪 力量</option>
+              <option value="🧙">🧙 法师</option>
+              <option value="🗡️">🗡️ 武器</option>
+              <option value="🎭">🎭 面具</option>
+              <option value="😈">😈 恶魔</option>
+              <option value="👼">👼 天使</option>
+              <option value="🦸">🦸 英雄</option>
+              <option value="🎨">🎨 艺术</option>
+              <option value="📚">📚 学者</option>
+              <option value="⚔️">⚔️ 战斗</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">分类描述</label>
+            <input type="text" class="form-input" id="categoryDesc" placeholder="描述这个分类的用途">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('createCategoryModal')">取消</button>
+        <button class="btn btn-primary" onclick="createCategory()">
+          <i data-lucide="Plus"></i>
+          创建分类
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../js/app.js"></script>
+  <script src="../js/data.js"></script>
+  <script>
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+      loadCustomCategories();
+      renderCategoryPills();
+      checkCharactersExist();
+    });
+    
+    // 角色分类存储键
+    const CATEGORY_KEY = 'oc_character_categories';
+    
+    // 加载自定义分类
+    function loadCustomCategories() {
+      const categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || '[]');
+      const container = document.getElementById('customCategoriesList');
+      
+      if (categories.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="padding: var(--spacing-md); text-align: center; color: var(--text-muted); font-size: 0.875rem;"><p>暂无自定义分类</p></div>';
+        return;
+      }
+      
+      container.innerHTML = categories.map(cat => `
+        <a href="#" class="sidebar-nav-item" onclick="filterCharacters('${cat.id}')" data-category-id="${cat.id}">
+          <span class="icon">${cat.icon ? `<i data-lucide="${cat.icon}"></i>` : '<i data-lucide="Folder"></i>'}</span>
+          <span>${cat.name}</span>
+          <button class="btn btn-ghost btn-icon" style="margin-left: auto; padding: 4px;" onclick="event.preventDefault(); deleteCategory('${cat.id}')" title="删除分类">
+            <i data-lucide="X" style="font-size: 0.75rem;"></i>
+          </button>
+        </a>
+      `).join('');
+    }
+    
+    // 显示创建分类模态框
+    function showCreateCategoryModal() {
+      document.getElementById('createCategoryModal').classList.add('active');
+    }
+    
+    // 创建分类
+    function createCategory() {
+      const name = document.getElementById('categoryName').value.trim();
+      const icon = document.getElementById('categoryIcon').value;
+      const desc = document.getElementById('categoryDesc').value.trim();
+      
+      if (!name) {
+        alert('请输入分类名称');
+        return;
+      }
+      
+      const categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || '[]');
+      
+      // 检查是否已存在同名分类
+      if (categories.some(c => c.name === name)) {
+        alert('分类名称已存在');
+        return;
+      }
+      
+      const newCategory = {
+        id: 'cat_' + Date.now(),
+        name: name,
+        icon: icon,
+        desc: desc,
+        createdAt: new Date().toISOString()
+      };
+      
+      categories.push(newCategory);
+      localStorage.setItem(CATEGORY_KEY, JSON.stringify(categories));
+      
+      // 重新加载分类列表
+      loadCustomCategories();
+      renderCategoryPills();
+      
+      // 关闭模态框
+      closeModal('createCategoryModal');
+      
+      // 清空表单
+      document.getElementById('categoryName').value = '';
+      document.getElementById('categoryDesc').value = '';
+      
+      alert('分类创建成功！');
+    }
+    
+    // 删除分类
+    function deleteCategory(categoryId) {
+      if (!confirm('确定要删除这个分类吗？')) return;
+      
+      const categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || '[]');
+      const filtered = categories.filter(c => c.id !== categoryId);
+      localStorage.setItem(CATEGORY_KEY, JSON.stringify(filtered));
+      
+      // 重新加载分类列表
+      loadCustomCategories();
+      renderCategoryPills();
+      
+      alert('分类已删除');
+    }
+    
+    // 显示创建角色模态框
+    function showCreateCharacterModal() {
+      // 加载分类到下拉框
+      const categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || '[]');
+      const categorySelect = document.getElementById('charCategory');
+      
+      let options = '<option value="">选择分类...</option>';
+      categories.forEach(cat => {
+        options += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
+      });
+      categorySelect.innerHTML = options;
+      
+      document.getElementById('createCharacterModal').classList.add('active');
+    }
+    
+    // 关闭模态框
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+    
+    // 创建角色
+    function createCharacter() {
+      alert('角色创建成功！');
+      closeModal('createCharacterModal');
+    }
+    
+    // 当前编辑日记的角色ID
+    let currentDiaryCharacterId = null;
+    
+    // 显示日记管理（需要先选择角色）
+    function showDiaryModalPrompt() {
+      const characters = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+      
+      if (characters.length === 0) {
+        alert('请先创建角色后再管理日记');
+        return;
+      }
+      
+      // 创建角色选择下拉框
+      const options = characters.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
+      const choice = prompt(`请选择要管理日记的角色：\n${options}\n\n请输入角色编号：`);
+      
+      if (!choice) return;
+      
+      const index = parseInt(choice) - 1;
+      if (isNaN(index) || index < 0 || index >= characters.length) {
+        alert('无效的选择');
+        return;
+      }
+      
+      showDiaryModal(characters[index].id);
+    }
+    
+    // 显示日记模态框
+    function showDiaryModal(characterId) {
+      currentDiaryCharacterId = characterId;
+      loadDiaries(characterId);
+      document.getElementById('diaryModal').classList.add('active');
+    }
+    
+    // 加载日记列表
+    function loadDiaries(characterId) {
+      const diaries = JSON.parse(localStorage.getItem('oc_diaries') || '[]');
+      const characterDiaries = diaries.filter(d => d.characterId === characterId);
+      
+      const diaryList = document.getElementById('diaryList');
+      
+      if (characterDiaries.length === 0) {
+        diaryList.innerHTML = '<div class="empty-state"><p>暂无日记</p></div>';
+        return;
+      }
+      
+      diaryList.innerHTML = characterDiaries.map(diary => `
+        <div class="card" style="margin-bottom: var(--spacing-md);">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+              <h4 style="margin: 0 0 var(--spacing-xs);">${diary.title || '无标题'}</h4>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">
+                ${new Date(diary.createdAt).toLocaleDateString('zh-CN')}
+                ${diary.mood ? ' · ' + getMoodEmoji(diary.mood) : ''}
+                ${diary.forAI ? ' · 📚 供AI学习' : ''}
+              </p>
+            </div>
+            <button class="btn btn-ghost btn-icon" onclick="deleteDiary('${diary.id}')" title="删除">
+              <i data-lucide="Trash2"></i>
+            </button>
+          </div>
+          <p style="margin-top: var(--spacing-sm);">${diary.content}</p>
+        </div>
+      `).join('');
+    }
+    
+    // 获取心情emoji
+    function getMoodEmoji(mood) {
+      const moods = {
+        happy: '😊 开心',
+        sad: '😢 难过',
+        angry: '😠 生气',
+        surprised: '😮 惊讶',
+        calm: '😌 平静',
+        anxious: '😰 焦虑'
+      };
+      return moods[mood] || mood;
+    }
+    
+    // 添加日记
+    function addDiary() {
+      const title = document.getElementById('diaryTitle').value.trim();
+      const content = document.getElementById('diaryContent').value.trim();
+      const mood = document.getElementById('diaryMood').value;
+      const forAI = document.getElementById('diaryForAI').checked;
+      
+      if (!content) {
+        alert('请输入日记内容');
+        return;
+      }
+      
+      const diary = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        characterId: currentDiaryCharacterId,
+        worldId: localStorage.getItem('oc_current_world'),
+        title: title,
+        content: content,
+        mood: mood,
+        forAI: forAI,
+        createdAt: new Date().toISOString()
+      };
+      
+      const diaries = JSON.parse(localStorage.getItem('oc_diaries') || '[]');
+      diaries.push(diary);
+      localStorage.setItem('oc_diaries', JSON.stringify(diaries));
+      
+      // 清空表单
+      document.getElementById('diaryTitle').value = '';
+      document.getElementById('diaryContent').value = '';
+      document.getElementById('diaryMood').value = '';
+      document.getElementById('diaryForAI').checked = false;
+      
+      // 刷新日记列表
+      loadDiaries(currentDiaryCharacterId);
+    }
+    
+    // 删除日记
+    function deleteDiary(diaryId) {
+      if (!confirm('确定要删除这篇日记吗？')) return;
+      
+      const diaries = JSON.parse(localStorage.getItem('oc_diaries') || '[]');
+      const filtered = diaries.filter(d => d.id !== diaryId);
+      localStorage.setItem('oc_diaries', JSON.stringify(filtered));
+      
+      loadDiaries(currentDiaryCharacterId);
+    }
+    
+    // 检查是否有角色，控制引导页面/胶囊栏显示
+    function checkCharactersExist() {
+      const characters = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+      const pillsBar = document.getElementById('categoryPillsBar');
+      if (characters.length > 0 && pillsBar) {
+        pillsBar.style.display = 'block';
+      }
+      // 更新计数
+      const countEl = document.getElementById('characterCount');
+      if (countEl) {
+        countEl.innerHTML = `共 <strong>${characters.length}</strong> 个角色`;
+      }
+    }
+
+    // 渲染分类胶囊
+    function renderCategoryPills() {
+      const categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || '[]');
+      const pillsContainer = document.getElementById('categoryPills');
+      if (!pillsContainer) return;
+
+      // 先清除旧的（保留"全部"按钮）
+      const allBtn = pillsContainer.querySelector('[data-pill=""]');
+      pillsContainer.innerHTML = '';
+      if (allBtn) pillsContainer.appendChild(allBtn);
+
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'category-pill';
+        btn.setAttribute('data-pill', cat.id);
+        btn.setAttribute('onclick', `filterCharactersByPill('${cat.id}')`);
+        btn.innerHTML = `<span>${cat.name}</span>`;
+        pillsContainer.appendChild(btn);
+      });
+
+      lucide.createIcons();
+    }
+
+    // 通过胶囊筛选（带高亮切换）
+    function filterCharactersByPill(categoryId) {
+      document.querySelectorAll('.category-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.pill === categoryId);
+      });
+      filterCharacters(categoryId);
+    }
+
+    // 筛选角色
+    function filterCharacters(categoryId) {
+      // 获取所有角色
+      const characters = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+      
+      let filteredCharacters = characters;
+      
+      // 如果指定了分类ID，则筛选该分类下的角色
+      if (categoryId) {
+        filteredCharacters = characters.filter(c => c.category === categoryId);
+      }
+      
+      // 更新角色列表显示
+      const charactersList = document.getElementById('charactersList');
+      if (!charactersList) {
+        console.log('Filtered by category:', categoryId, 'Total:', filteredCharacters.length);
+        return;
+      }
+      
+      if (filteredCharacters.length === 0 && characters.length === 0) {
+        // 完全没有角色 → 显示分步引导（不动态改，让页面默认状态保持）
+        return;
+      }
+
+      if (filteredCharacters.length === 0) {
+        // 分类下无角色
+        charactersList.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1; padding: var(--spacing-xxl) var(--spacing-lg); text-align: center;">
+            <div style="margin-bottom: var(--spacing-lg); color: var(--text-muted);">
+              <i data-lucide="user-x" style="width: 3rem; height: 3rem;"></i>
+            </div>
+            <h3 style="margin-bottom: var(--spacing-sm);">该分类下暂无角色</h3>
+            <p class="text-muted" style="margin-bottom: var(--spacing-lg);">为此分类添加角色吧</p>
+            <button class="btn btn-primary" onclick="showCreateCharacterModal()">
+              <i data-lucide="Plus"></i>
+              <span>创建角色</span>
+            </button>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      // 显示胶囊栏
+      const pillsBar = document.getElementById('categoryPillsBar');
+      if (pillsBar) pillsBar.style.display = 'block';
+      
+      // 渲染角色卡片
+      charactersList.innerHTML = filteredCharacters.map(character => `
+        <div class="card character-card" onclick="viewCharacter('${character.id}')">
+          <div class="card-body" style="text-align: center;">
+            <img src="${character.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + character.name}"
+                 alt="${character.name}"
+                 class="avatar avatar-lg"
+                 style="margin: 0 auto var(--spacing-md);">
+            <h3 style="margin-bottom: var(--spacing-xs);">${character.name}</h3>
+            <p class="text-muted text-sm">${character.description || '暂无描述'}</p>
+            ${character.tags ? `<div style="margin-top: var(--spacing-sm);">
+              ${character.tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join('')}
+            </div>` : ''}
+          </div>
+        </div>
+      `).join('');
+      
+      // 更新侧边栏选中状态
+      document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.categoryId === categoryId || (categoryId === '' && item.getAttribute('onclick')?.includes("filterCharacters('')"))) {
+          item.classList.add('active');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

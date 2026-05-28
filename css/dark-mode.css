@@ -1,0 +1,251 @@
+/* 🌌 OC宇宙 - 暗色模式样式 · 深蓝宇宙 */
+
+/* =========================================
+   星夜模式 · 样式适配
+   ========================================= */
+
+/* 暗色模式切换按钮 */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.theme-toggle:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.theme-toggle .icon-sun {
+  display: none;
+}
+
+.theme-toggle .icon-moon {
+  display: block;
+}
+
+/* 暗色模式下的切换按钮 */
+[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+/* 暗色模式：导航栏 */
+[data-theme="dark"] .navbar {
+  border-color: var(--border-color);
+  background-color: var(--bg-primary);
+}
+
+/* 暗色模式：侧边栏 */
+[data-theme="dark"] .sidebar {
+  background-color: var(--bg-sidebar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: var(--border-color);
+}
+
+/* 暗色模式：卡片 */
+[data-theme="dark"] .card {
+  border-color: var(--border-color);
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(96, 165, 250, 0.15);
+}
+
+/* 暗色模式：按钮 */
+[data-theme="dark"] .btn-secondary {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background-color: var(--border-color);
+}
+
+/* 暗色模式：标签 */
+[data-theme="dark"] .tag {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .tag-primary {
+  background-color: var(--primary-light);
+  color: var(--primary-hover);
+  border-color: transparent;
+}
+
+[data-theme="dark"] .tag-success {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+  border-color: transparent;
+}
+
+[data-theme="dark"] .tag-warning {
+  background-color: var(--warning-bg);
+  color: var(--warning-color);
+  border-color: transparent;
+}
+
+[data-theme="dark"] .tag-danger {
+  background-color: var(--error-bg);
+  color: var(--error-color);
+  border-color: transparent;
+}
+
+/* 暗色模式：模态框 */
+[data-theme="dark"] .modal {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-xl), 0 0 0 1px rgba(96, 165, 250, 0.08);
+}
+
+/* 暗色模式：表单 */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* 暗色模式：渐变文字 */
+[data-theme="dark"] .gradient-text {
+  background: linear-gradient(135deg, #60A5FA 0%, #93C5FD 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 暗色模式：navbar brand 渐变 */
+[data-theme="dark"] .navbar-brand {
+  background: linear-gradient(135deg, #60A5FA 0%, #818CF8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="dark"] .navbar-brand .logo {
+  -webkit-text-fill-color: initial;
+}
+
+/* 暗色模式：阴影 */
+[data-theme="dark"] .modal {
+  box-shadow: var(--shadow-xl);
+}
+
+/* 暗色模式：表格 */
+[data-theme="dark"] th {
+  background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] tr:nth-child(even) {
+  background-color: rgba(13, 20, 36, 0.8);
+}
+
+[data-theme="dark"] hr {
+  border-color: var(--border-color);
+}
+
+/* 暗色模式：选中文字 */
+[data-theme="dark"] ::selection {
+  background-color: rgba(96, 165, 250, 0.25);
+  color: #E2E8F0;
+}
+
+/* 暗色模式：通知框 */
+[data-theme="dark"] .alert-info {
+  background-color: var(--info-bg);
+  color: var(--info-text);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+[data-theme="dark"] .alert-success {
+  background-color: var(--success-bg);
+  color: var(--success-color);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="dark"] .alert-warning {
+  background-color: var(--warning-bg);
+  color: var(--warning-color);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+[data-theme="dark"] .alert-error {
+  background-color: var(--error-bg);
+  color: var(--error-color);
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+/* 暗色模式：代码块 */
+[data-theme="dark"] code {
+  background-color: var(--bg-tertiary);
+  color: #93C5FD;
+}
+
+[data-theme="dark"] pre {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+/* 暗色模式：滚动条 */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
+/* 过渡动画 */
+html {
+  transition: background-color var(--transition-normal);
+}
+
+body,
+.navbar,
+.sidebar,
+.card,
+.modal,
+input,
+textarea,
+select {
+  transition: background-color var(--transition-normal),
+              border-color var(--transition-normal),
+              color var(--transition-normal);
+}
+
