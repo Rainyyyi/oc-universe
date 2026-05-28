@@ -490,10 +490,10 @@
       }
 
       try {
-        // 云端 API 用 summary/content，本地用 description；两边都传保证兼容
+        // 云端 stories 集合字段：worldId/title/summary/content/status/wordCount/characters/locations/chapters
         await OCData.createStory({
           title, worldId, type: storyType,
-          description, summary: description, content: '',
+          summary: description, content: '',
           characters: characterIds
         });
         closeModal('createStoryModal');
@@ -690,7 +690,7 @@
       try {
         await OCData.updateStory(storyId, {
           title, status,
-          summary, description: summary,
+          summary,
           content, wordCount: content.length
         });
         showNotification('保存成功！', 'success');
