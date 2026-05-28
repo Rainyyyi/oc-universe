@@ -177,12 +177,14 @@ body {
   line-height: 1.6;
   color: var(--text-primary);
   background-color: var(--bg-primary);
-  /* 极淡日出底透 — 主色纯白，0.1透明主内容区隐约透出晨曦感 */
+  /* 亮色模式 — 柔和暖调宇宙感：极淡蓝紫光晕 + 细腻噪点 */
   background-image:
-    /* 右上角极淡桃光 */
-    radial-gradient(ellipse 120% 80% at 100% 0%, rgba(255, 180, 150, 0.04) 0%, transparent 55%),
-    /* 左下角极淡橙光 */
-    radial-gradient(ellipse 100% 70% at 0% 100%, rgba(255, 200, 130, 0.03) 0%, transparent 50%);
+    /* 右上角淡紫蓝光晕 */
+    radial-gradient(ellipse 100% 70% at 100% 0%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+    /* 左下角暖橙微光 */
+    radial-gradient(ellipse 80% 60% at 0% 100%, rgba(251, 146, 60, 0.04) 0%, transparent 50%),
+    /* 底部中心淡蓝 */
+    radial-gradient(ellipse 60% 40% at 50% 110%, rgba(59, 130, 246, 0.035) 0%, transparent 55%);
   background-size: 100% 100%;
   background-attachment: fixed;
   background-position: 0 0;
