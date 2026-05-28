@@ -259,9 +259,15 @@
           </div>
           <div class="form-group">
             <label class="form-label">出场角色</label>
-            <div class="tag-group" id="storyCharPicker" onclick="pickStoryCharacters()" style="padding: var(--spacing-md); background: var(--bg-tertiary); border-radius: var(--radius-md); cursor: pointer; min-height: 40px;">
-              <span class="text-muted text-sm" id="storyCharPlaceholder">点击添加角色...</span>
-              <div id="storyCharTags" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+            <div id="storyCharPicker" style="padding: var(--spacing-md); background: var(--bg-tertiary); border-radius: var(--radius-md); min-height: 40px;">
+              <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleCharPickList()">
+                <i data-lucide="ChevronDown" id="storyCharChevron" style="width:1rem;height:1rem;transition:transform 0.2s;"></i>
+                <span class="text-sm" id="storyCharHint" style="color:var(--text-muted);">点击展开选择角色...</span>
+              </div>
+              <div id="storyCharList" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);max-height:200px;overflow-y:auto;">
+                <p class="text-muted text-sm" id="storyCharLoading">加载中...</p>
+              </div>
+              <div id="storyCharTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
             </div>
             <input type="hidden" id="storyCharacterIds" value="">
           </div>
@@ -538,7 +544,14 @@
         form.reset();
         document.getElementById('storyCharacterIds').value = '';
         document.getElementById('storyCharTags').innerHTML = '';
-        document.getElementById('storyCharPlaceholder').style.display = '';
+        // 重置角色选择区
+        const charList = document.getElementById('storyCharList');
+        if (charList) { charList.style.display = 'none'; }
+        const chevron = document.getElementById('storyCharChevron');
+        if (chevron) { chevron.style.transform = ''; }
+        const hint = document.getElementById('storyCharHint');
+        if (hint) { hint.textContent = '点击展开选择角色...'; }
+        _charPickLoaded = false;
         showNotification('故事创建成功！', 'success');
         await loadStories();
         _worldNameCache = null;
@@ -548,49 +561,76 @@
       }
     }
 
-    // 选择出场角色（弹出简单多选）
-    async function pickStoryCharacters() {
+    // ---- 出场角色选择（表单内展开，不弹新模态框）----
+    let _charPickLoaded = false;
+
+    async function toggleCharPickList() {
+      const list = document.getElementById('storyCharList');
+      const chevron = document.getElementById('storyCharChevron');
+      if (!list || !chevron) return;
+
+      const isOpen = list.style.display !== 'none';
+      if (isOpen) {
+        // 收起
+        list.style.display = 'none';
+        chevron.style.transform = '';
+        return;
+      }
+
+      // 展开
+      list.style.display = 'block';
+      chevron.style.transform = 'rotate(180deg)';
+
+      // 懒加载角色列表（只加载一次）
+      if (!_charPickLoaded) {
+        await loadCharPickOptions();
+        _charPickLoaded = true;
+      }
+    }
+
+    async function loadCharPickOptions() {
+      const container = document.getElementById('storyCharList');
+      if (!container) return;
       let chars;
       try { chars = await OCData.getCharacters(); } catch (e) { chars = []; }
       if (!chars || chars.length === 0) {
-        showNotification('暂无角色可添加，先去角色页创建一个吧', 'warning');
+        container.innerHTML = `<p class="text-muted text-sm">暂无角色可添加，先去角色页创建吧</p>`;
         return;
       }
       const currentIds = (document.getElementById('storyCharacterIds').value || '').split(',').filter(Boolean);
-      const items = chars.map(c => {
+      container.innerHTML = chars.map(c => {
         const cid = c.$id || c.id;
         const checked = currentIds.includes(cid) ? 'checked' : '';
-        return `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
-          <input type="checkbox" value="${cid}" data-name="${c.name || '未命名'}" ${checked}>
-          <span>${c.name || '未命名'}</span>
+        return `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg-primary)'" onmouseout="this.style.background='transparent'">
+          <input type="checkbox" value="${cid}" data-name="${escapeHtml(c.name || '未命名')}" ${checked} onchange="onCharPicked(this)">
+          <span style="flex:1;">${escapeHtml(c.name || '未命名')}</span>
         </label>`;
       }).join('');
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    }
 
-      // 用简易 modal 方式展示（直接复用 createStoryModal 遮罩层逻辑太复杂，用 confirm 风格）
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:center;justify-content:center;';
-      overlay.innerHTML = `<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:20px;width:320px;max-height:60vh;overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,0.3);">
-        <h4 style="margin:0 0 12px 0;">选择出场角色</h4>
-        <div style="margin-bottom:16px;">${items}</div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button id="_charCancel" class="btn btn-secondary" style="padding:6px 14px;font-size:0.85rem;">取消</button>
-          <button id="_charOk" class="btn btn-primary" style="padding:6px 14px;font-size:0.85rem;">确定</button>
-        </div>
-      </div>`;
-      document.body.appendChild(overlay);
+    function onCharPicked(cb) {
+      // 收集所有已勾选的
+      const container = document.getElementById('storyCharList');
+      if (!container) return;
+      const checked = container.querySelectorAll('input[type="checkbox"]:checked');
+      const ids = []; const names = [];
+      checked.forEach(el => { ids.push(el.value); names.push(el.dataset.name); });
 
-      overlay.querySelector('#_charCancel').onclick = () => overlay.remove();
-      overlay.querySelector('#_charOk').onclick = () => {
-        const checked = overlay.querySelectorAll('input[type="checkbox"]:checked');
-        const ids = []; const names = [];
-        checked.forEach(cb => { ids.push(cb.value); names.push(cb.dataset.name); });
-        document.getElementById('storyCharacterIds').value = ids.join(',');
-        const tagContainer = document.getElementById('storyCharTags');
-        tagContainer.innerHTML = names.map(n => `<span class="tag" style="background:var(--accent-primary);color:#fff;">${n}</span>`).join('');
-        document.getElementById('storyCharPlaceholder').style.display = names.length ? 'none' : '';
-        overlay.remove();
-      };
-      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+      // 更新 hidden input
+      document.getElementById('storyCharacterIds').value = ids.join(',');
+
+      // 更新 tag 显示
+      const tagContainer = document.getElementById('storyCharTags');
+      tagContainer.innerHTML = names.map(n =>
+        `<span class="tag" style="background:var(--primary-color);color:#fff;cursor:default;">${n}</span>`
+      ).join('');
+
+      // 更新提示文字
+      const hint = document.getElementById('storyCharHint');
+      if (hint) hint.textContent = names.length
+        ? `已选 ${names.length} 个角色`
+        : '点击展开选择角色...';
     }
 
     // 查看并编辑故事（打开编辑器模态框）
