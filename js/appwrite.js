@@ -61,6 +61,42 @@ if (isPlaceholderConfig()) {
 
 const SESSION_KEY = 'appwrite_session_secret';
 
+/**
+ * 确保 client 的 JWT 认证有效（多种方式尝试）
+ */
+function applyJWT(client, secret) {
+  if (!secret || !client) return false;
+  try {
+    // 方式1: 标准 setJWT
+    if (typeof client.setJWT === 'function') {
+      client.setJWT(secret);
+      console.log('✅ JWT 已通过 setJWT 设置');
+      return true;
+    }
+  } catch (e) { console.warn('setJWT 失败:', e.message); }
+
+  try {
+    // 方式2: 直接设置 headers
+    if (client.headers) {
+      client.headers['Authorization'] = 'Bearer ' + secret;
+      console.log('✅ JWT 已通过 headers.Authorization 设置');
+      return true;
+    }
+  } catch (e) { console.warn('headers 设置失败:', e.message); }
+
+  try {
+    // 方式3: setSession（旧版 SDK）
+    if (typeof client.setSession === 'function') {
+      client.setSession(secret);
+      console.log('✅ JWT 已通过 setSession 设置');
+      return true;
+    }
+  } catch (e) { console.warn('setSession 失败:', e.message); }
+
+  console.warn('⚠️ 所有 JWT 设置方式均失败');
+  return false;
+}
+
 function getClient() {
   if (!_client) {
     if (typeof Appwrite === 'undefined') {
@@ -72,15 +108,9 @@ function getClient() {
     // 从 localStorage 恢复 JWT（跨页面/防第三方 cookie 被拦截）
     const savedSecret = localStorage.getItem(SESSION_KEY);
     if (savedSecret) {
-      try {
-        if (_client.setJWT) {
-          _client.setJWT(savedSecret);
-        } else if (_client.setSession) {
-          _client.setSession(savedSecret);
-        }
-      } catch (e) {
-        console.warn('恢复 session 失败:', e);
-      }
+      applyJWT(_client, savedSecret);
+    } else {
+      console.debug('📭 localStorage 中无已保存的 JWT，需要重新登录');
     }
   }
   return _client;
@@ -145,12 +175,7 @@ async function authLogin(email, password) {
   if (session && session.secret) {
     localStorage.setItem(SESSION_KEY, session.secret);
     // 立即给 client 设置 JWT，确保后续同页面请求带认证
-    const client = getClient();
-    if (client.setJWT) {
-      client.setJWT(session.secret);
-    } else if (client.setSession) {
-      client.setSession(session.secret);
-    }
+    applyJWT(getClient(), session.secret);
   }
   _currentUser = await account.get();
   return session;

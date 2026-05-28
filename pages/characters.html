@@ -409,7 +409,7 @@
   </div>
 
   <!-- JavaScript -->
-  <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2/dist/iife/sdk.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@17/dist/iife/sdk.min.js"></script>
   <script src="../js/appwrite.js"></script>
   <script src="../js/api-client.js"></script>
   <script src="../js/app.js"></script>
@@ -540,8 +540,27 @@
             const name = w.name || '未命名世界';
             worldOptions += `<option value="${id}">${name}</option>`;
           });
+        } else {
+          // 世界观列表为空 → 提示用户
+          worldOptions += '<option value="" disabled>暂无世界观，请先创建</option>';
         }
         worldSelect.innerHTML = worldOptions;
+
+        // 如果没有世界观，显示提示
+        if (!worlds || worlds.length === 0) {
+          const hint = document.getElementById('worldSelectHint');
+          if (!hint) {
+            const hintEl = document.createElement('div');
+            hintEl.id = 'worldSelectHint';
+            hintEl.style.cssText = 'margin-top:6px;font-size:13px;color:#f59e0b;display:flex;align-items:center;gap:6px;';
+            hintEl.innerHTML = '<i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0;"></i><span>还没有 worldview 喔，请先去首页创建一个世界观吧</span>';
+            worldSelect.parentNode.insertBefore(hintEl, worldSelect.nextSibling);
+            lucide.createIcons();
+          }
+        } else {
+          const hint = document.getElementById('worldSelectHint');
+          if (hint) hint.remove();
+        }
       } catch (err) {
         console.error('加载世界观列表失败:', err);
       }
