@@ -416,12 +416,17 @@
   </div>
 
   <!-- JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2/dist/iife/sdk.min.js"></script>
+  <script src="../js/appwrite.js"></script>
+  <script src="../js/api-client.js"></script>
   <script src="../js/app.js"></script>
   <script src="../js/data.js"></script>
   <script>
     // 页面初始化
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       initTheme();
+      // 初始化数据模式（云端/本地）
+      await OCData.initDataMode();
       loadCustomCategories();
       renderCategoryPills();
       checkCharactersExist();
@@ -516,7 +521,24 @@
     }
     
     // 显示创建角色模态框
-    function showCreateCharacterModal() {
+    async function showCreateCharacterModal() {
+      // 加载世界观到下拉框
+      try {
+        const worlds = await OCData.getWorlds();
+        const worldSelect = document.getElementById('characterWorldSelect');
+        let worldOptions = '<option value="">选择世界观...</option>';
+        if (worlds && worlds.length > 0) {
+          worlds.forEach(w => {
+            const id = w.$id || w.id;
+            const name = w.name || '未命名世界';
+            worldOptions += `<option value="${id}">${name}</option>`;
+          });
+        }
+        worldSelect.innerHTML = worldOptions;
+      } catch (err) {
+        console.error('加载世界观列表失败:', err);
+      }
+
       // 加载分类到下拉框
       const categories = JSON.parse(localStorage.getItem(CATEGORY_KEY) || '[]');
       const categorySelect = document.getElementById('charCategory');
