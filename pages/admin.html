@@ -491,7 +491,7 @@
                   <i data-lucide="Brain"></i>
                   <span class="text-sm">训练AI</span>
                 </div>
-                <div class="quick-action" onclick="switchAdminTab('stats-inline', event)">
+                <div class="quick-action" onclick="switchAdminTab('dashboard', event); setTimeout(() => document.getElementById('statsSection')?.scrollIntoView({behavior:'smooth'}), 100)">
                   <i data-lucide="BarChart3"></i>
                   <span class="text-sm">数据统计</span>
                 </div>
@@ -555,7 +555,7 @@
       <div id="tab-backup" style="display: none;">
         <header class="page-header">
           <div class="page-title">
-            <h1>💾 备份与导出</h1>
+            <h1>备份与导出</h1>
           </div>
         </header>
 
@@ -1069,7 +1069,7 @@
         for (const file of files) {
           if (!file.type.startsWith('image/')) { failCount++; continue; }
           try {
-            await storage.createFile(BUCKET_ID(), 'unique(), file);
+            await storage.createFile(BUCKET_ID(), window.Appwrite.ID ? window.Appwrite.ID.unique() : ('file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)), file);
             successCount++;
           } catch(e) { failCount++; }
         }
