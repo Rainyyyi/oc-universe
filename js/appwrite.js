@@ -204,7 +204,13 @@ async function dbCreate(collectionId, data) {
       DB_ID(),
       collectionId,
       Appwrite.ID.unique(),
-      { ...data, userId: user.$id }
+      { ...data, userId: user.$id },
+      // 给创建者完整的读写删权限
+      [
+        Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
+        Appwrite.Permission.write(Appwrite.Role.user(user.$id)),
+        Appwrite.Permission.delete(Appwrite.Role.user(user.$id)),
+      ]
     ),
     new Promise((_, reject) => setTimeout(() => reject(new Error('dbCreate 超时')), 8000))
   ]);
@@ -229,13 +235,45 @@ async function dbUpdate(collectionId, documentId, data) {
 
 /**
  * 删除记录（带 5 秒超时）
+ * 如果因权限不足失败，尝试补权限后再删
  */
 async function dbDelete(collectionId, documentId) {
   if (isPlaceholderConfig()) throw new Error('Appwrite 未配置');
-  return Promise.race([
-    getDatabases().deleteDocument(DB_ID(), collectionId, documentId),
+  const db = getDatabases();
+  const tryDelete = () => Promise.race([
+    db.deleteDocument(DB_ID(), collectionId, documentId),
     new Promise((_, reject) => setTimeout(() => reject(new Error('dbDelete 超时')), 5000))
   ]);
+
+  try {
+    return await tryDelete();
+  } catch (err) {
+    // 如果是权限问题，尝试给自己加 delete 权限后重试
+    const msg = (err.message || '').toLowerCase();
+    const status = err.status || err.code || '';
+    if (msg.includes('unauthorized') || msg.includes('forbidden') ||
+        msg.includes('not authorized') || String(status) === '401' || String(status) === '403') {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          await Promise.race([
+            db.updateDocument(DB_ID(), collectionId, documentId, {}, [
+              Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
+              Appwrite.Permission.write(Appwrite.Role.user(user.$id)),
+              Appwrite.Permission.delete(Appwrite.Role.user(user.$id)),
+            ]),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('补权限超时')), 5000))
+          ]);
+          // 补权限成功，再试一次删除
+          return await tryDelete();
+        }
+      } catch (retryErr) {
+        console.warn('补权限重试也失败了:', retryErr);
+      }
+      throw new Error('没有权限操作此数据。请确认你已登录且是数据的创建者。\n（如果是旧数据可能需要在 Appwrite 控制台手动设置权限）');
+    }
+    throw err;
+  }
 }
 
 // ==================== 文件存储模块 ====================

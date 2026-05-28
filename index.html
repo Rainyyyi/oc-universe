@@ -700,11 +700,24 @@
     async function deleteWorldConfirm(id, name) {
       if (!confirm(`确认删除世界观「${name}」？\n此操作将同时删除该世界观下的所有角色和故事，且不可恢复。`)) return;
       try {
+        // 先检查登录状态
+        const loggedIn = await OCData.isLoggedIn();
+        if (!loggedIn) {
+          showNotification('登录已过期，请重新登录后再试', 'error');
+          if (typeof showLoginModal === 'function') showLoginModal();
+          return;
+        }
         await OCData.deleteWorld(id);
         showNotification('已删除世界观', 'success');
         await loadWorlds();
       } catch (err) {
-        showNotification('删除失败：' + err.message, 'error');
+        const msg = (err.message || '');
+        if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('未登录')) {
+          showNotification('登录已过期，请重新登录', 'error');
+          if (typeof showLoginModal === 'function') showLoginModal();
+        } else {
+          showNotification('删除失败：' + msg, 'error');
+        }
       }
     }
     
