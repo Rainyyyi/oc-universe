@@ -376,6 +376,29 @@ initAdmin();
  */
 let _useCloud = false;
 
+/**
+ * 判断一个错误是否是"云端不可用"（应降级到本地模式）
+ * 包括：401 未授权、403 无权限、400 配置错误、网络错误
+ */
+function isCloudUnavailableError(err) {
+  if (!err) return true;
+  const status = err.code || err.status || err.response?.status || 0;
+  const msg = (err.message || err.type || '').toLowerCase();
+  return (
+    status === 401 || status === 403 || status === 400 ||
+    msg.includes('unauthorized') ||
+    msg.includes('forbidden') ||
+    msg.includes('not authorized') ||
+    msg.includes('no permissions') ||
+    msg.includes('network') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('name_not_resolved') ||
+    msg.includes('net::err_') ||
+    msg.includes('fulltext index') ||
+    msg.includes('prohibited')
+  );
+}
+
 async function initDataMode() {
   // 占位符配置直接禁用云端，不发任何请求
   const cfg = window.APPWRITE_CONFIG;
@@ -412,42 +435,67 @@ function useCloud() {
 }
 
 // ==================== 统一 OCData 代理 ====================
+/**
+ * 云端调用包装器：自动降级到本地模式。
+ * 当云端返回 401/403/400/网络错误时，静默切换到本地存储，保证页面可用。
+ */
+async function withCloudFallback(cloudFn, localFn, ...args) {
+  if (!useCloud()) return localFn(...args);
+  try {
+    return await cloudFn(...args);
+  } catch (err) {
+    if (isCloudUnavailableError(err)) {
+      // 云端不可用，标记为本地模式（后续调用不再尝试云端）
+      if (_useCloud) {
+        _useCloud = false;
+        console.warn('⚠️ 云端不可用，已自动切换到本地模式：', err.message || err);
+      }
+      // 尝试用本地方法
+      try { return localFn(...args); } catch (localErr) { throw localErr; }
+    }
+    // 其他错误（如校验失败）直接抛出
+    throw err;
+  }
+}
 
 const OCDataProxy = {
   // 世界观
   async getWorlds() {
-    if (useCloud()) return window.API.worlds.getAll();
-    return getWorlds();
+    return withCloudFallback(() => window.API.worlds.getAll(), getWorlds);
   },
   async getWorld(id) {
-    if (useCloud()) return window.API.worlds.get(id);
-    return getWorld(id);
+    return withCloudFallback(() => window.API.worlds.get(id), () => getWorld(id));
   },
   async createWorld(data) {
-    if (useCloud()) return window.API.worlds.create(data);
-    return createWorld(data);
+    return withCloudFallback(() => window.API.worlds.create(data), () => createWorld(data));
   },
   async updateWorld(id, data) {
-    if (useCloud()) return window.API.worlds.update(id, data);
-    return updateWorld(id, data);
+    return withCloudFallback(() => window.API.worlds.update(id, data), () => updateWorld(id, data));
   },
   async deleteWorld(id) {
-    if (useCloud()) return window.API.worlds.delete(id);
-    return deleteWorld(id);
+    return withCloudFallback(() => window.API.worlds.delete(id), () => deleteWorld(id));
   },
 
   // 协作功能
   async shareWorld(worldId, userId) {
-    if (useCloud()) return window.API.worlds.share(worldId, userId);
+    const result = await withCloudFallback(
+      () => window.API.worlds.share(worldId, userId),
+      () => undefined
+    );
+    if (result !== undefined) return result;
     const world = getWorld(worldId);
     if (!world) throw new Error('世界观不存在');
     const collabs = world.collaborators || [];
-    if (collabs.includes(userId)) return world; // 已经是协作者
+    if (collabs.includes(userId)) return world;
     collabs.push(userId);
     return updateWorld(worldId, { collaborators: collabs });
   },
   async unshareWorld(worldId, userId) {
-    if (useCloud()) return window.API.worlds.unshare(worldId, userId);
+    const result = await withCloudFallback(
+      () => window.API.worlds.unshare(worldId, userId),
+      () => undefined
+    );
+    if (result !== undefined) return result;
     const world = getWorld(worldId);
     if (!world) throw new Error('世界观不存在');
     const collabs = (world.collaborators || []).filter(id => id !== userId);
@@ -456,117 +504,113 @@ const OCDataProxy = {
 
   // 角色
   async getCharacters(worldId) {
-    if (useCloud()) return window.API.characters.getAll(worldId);
-    return worldId ? getCharactersByWorld(worldId) : getCharacters();
+    return withCloudFallback(
+      () => window.API.characters.getAll(worldId),
+      () => worldId ? getCharactersByWorld(worldId) : getCharacters()
+    );
   },
   async getCharacter(id) {
-    if (useCloud()) return window.API.characters.get(id);
-    return getCharacter(id);
+    return withCloudFallback(() => window.API.characters.get(id), () => getCharacter(id));
   },
   async getCharactersByWorld(worldId) {
-    if (useCloud()) return window.API.characters.getAll(worldId);
-    return getCharactersByWorld(worldId);
+    return withCloudFallback(() => window.API.characters.getAll(worldId), () => getCharactersByWorld(worldId));
   },
   async createCharacter(data) {
-    if (useCloud()) return window.API.characters.create(data);
-    return createCharacter(data);
+    return withCloudFallback(() => window.API.characters.create(data), () => createCharacter(data));
   },
   async updateCharacter(id, data) {
-    if (useCloud()) return window.API.characters.update(id, data);
-    return updateCharacter(id, data);
+    return withCloudFallback(() => window.API.characters.update(id, data), () => updateCharacter(id, data));
   },
   async deleteCharacter(id) {
-    if (useCloud()) return window.API.characters.delete(id);
-    return deleteCharacter(id);
+    return withCloudFallback(() => window.API.characters.delete(id), () => deleteCharacter(id));
   },
 
   // 故事
   async getStories(worldId) {
-    if (useCloud()) return window.API.stories.getAll(worldId);
-    return worldId ? getStoriesByWorld(worldId) : getStories();
+    return withCloudFallback(
+      () => window.API.stories.getAll(worldId),
+      () => worldId ? getStoriesByWorld(worldId) : getStories()
+    );
   },
   async getStory(id) {
-    if (useCloud()) return window.API.stories.get(id);
-    return getStory(id);
+    return withCloudFallback(() => window.API.stories.get(id), () => getStory(id));
   },
   async getStoriesByWorld(worldId) {
-    if (useCloud()) return window.API.stories.getAll(worldId);
-    return getStoriesByWorld(worldId);
+    return withCloudFallback(() => window.API.stories.getAll(worldId), () => getStoriesByWorld(worldId));
   },
   async createStory(data) {
-    if (useCloud()) return window.API.stories.create(data);
-    return createStory(data);
+    return withCloudFallback(() => window.API.stories.create(data), () => createStory(data));
   },
   async updateStory(id, data) {
-    if (useCloud()) return window.API.stories.update(id, data);
-    return updateStory(id, data);
+    return withCloudFallback(() => window.API.stories.update(id, data), () => updateStory(id, data));
   },
   async deleteStory(id) {
-    if (useCloud()) return window.API.stories.delete(id);
-    return deleteStory(id);
+    return withCloudFallback(() => window.API.stories.delete(id), () => deleteStory(id));
   },
 
   // 日记
   async getDiaries(characterId) {
-    if (useCloud()) return window.API.diaries.getAll(characterId);
-    return characterId ? getDiariesByCharacter(characterId) : getDiaries();
+    return withCloudFallback(
+      () => window.API.diaries.getAll(characterId),
+      () => characterId ? getDiariesByCharacter(characterId) : getDiaries()
+    );
   },
   async getDiariesByCharacter(characterId) {
-    if (useCloud()) return window.API.diaries.getAll(characterId);
-    return getDiariesByCharacter(characterId);
+    return withCloudFallback(
+      () => window.API.diaries.getAll(characterId),
+      () => getDiariesByCharacter(characterId)
+    );
   },
   async createDiary(data) {
-    if (useCloud()) return window.API.diaries.create(data);
-    return createDiary(data);
+    return withCloudFallback(() => window.API.diaries.create(data), () => createDiary(data));
   },
 
   // 关系
   async getRelations(worldId) {
-    if (useCloud()) return window.API.relations.getAll(worldId);
-    return worldId ? getRelations().filter(r => r.worldId === worldId) : getRelations();
+    return withCloudFallback(
+      () => window.API.relations.getAll(worldId),
+      () => worldId ? getRelations().filter(r => r.worldId === worldId) : getRelations()
+    );
   },
   async getRelationsByCharacter(characterId) {
-    if (useCloud()) {
+    return withCloudFallback(async () => {
       const all = await window.API.relations.getAll();
       return all.filter(r => r.sourceId === characterId || r.targetId === characterId);
-    }
-    return getRelationsByCharacter(characterId);
+    }, () => getRelationsByCharacter(characterId));
   },
   async createRelation(data) {
-    if (useCloud()) return window.API.relations.create(data);
-    return createRelation(data);
+    return withCloudFallback(() => window.API.relations.create(data), () => createRelation(data));
   },
   async updateRelation(id, data) {
-    if (useCloud()) return window.AppwriteDB?.relations.update(id, data);
-    return updateRelation(id, data);
+    return withCloudFallback(() => window.AppwriteDB?.relations.update(id, data), () => updateRelation(id, data));
   },
   async deleteRelation(id) {
-    if (useCloud()) return window.AppwriteDB?.relations.delete(id);
-    return deleteRelation(id);
+    return withCloudFallback(() => window.AppwriteDB?.relations.delete(id), () => deleteRelation(id));
   },
 
   // 聊天
   async getChats(characterId, limit) {
-    if (useCloud()) return window.API.chats.getAll(characterId, limit);
-    return characterId ? getChatsByCharacter(characterId) : getChats();
+    return withCloudFallback(
+      () => window.API.chats.getAll(characterId, limit),
+      () => characterId ? getChatsByCharacter(characterId) : getChats()
+    );
   },
   async getChatsByCharacter(characterId) {
-    if (useCloud()) return window.API.chats.getAll(characterId);
-    return getChatsByCharacter(characterId);
+    return withCloudFallback(() => window.API.chats.getAll(characterId), () => getChatsByCharacter(characterId));
   },
   async saveChat(data) {
-    if (useCloud()) return window.API.chats.save(data);
-    return saveChat(data);
+    return withCloudFallback(() => window.API.chats.save(data), () => saveChat(data));
   },
 
   // 灵感
   async getInspirations(worldId) {
-    if (useCloud()) return window.API.inspirations.getAll(worldId);
-    return worldId ? getInspirations().filter(i => i.worldId === worldId) : getInspirations();
+    return withCloudFallback(
+      () => window.API.inspirations.getAll(worldId),
+      () => worldId ? getInspirations().filter(i => i.worldId === worldId) : getInspirations()
+    );
   },
   async createInspiration(data) {
-    if (useCloud()) return window.API.inspirations.create(data);
-    return createInspiration(data);
+    return withCloudFallback(() => window.API.inspirations.create(data), () => createInspiration(data));
   },
 
   // 统计（本地计算，始终同步）
@@ -578,7 +622,6 @@ const OCDataProxy = {
 
   // 认证（代理到 AppwriteAuth，兼容原本地登录）
   async login(username, password) {
-    // 占位符配置不允许云端登录
     const cfg = window.APPWRITE_CONFIG;
     const isPlaceholder = !cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID' ||
       cfg.projectId === '' || cfg.databaseId === 'YOUR_DATABASE_ID' || cfg.databaseId === '' ||
@@ -591,14 +634,12 @@ const OCDataProxy = {
         return true;
       } catch (e) {
         console.error('Appwrite 登录失败:', e);
-        // 抛出原始错误，让调用方显示真实的错误信息
         throw e;
       }
     }
     return login(username, password);
   },
   async logout() {
-    // 占位符配置不需要云端登出
     const cfg = window.APPWRITE_CONFIG;
     const isPlaceholder = !cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID' ||
       cfg.projectId === '' || cfg.databaseId === 'YOUR_DATABASE_ID' || cfg.databaseId === '' ||
@@ -610,15 +651,12 @@ const OCDataProxy = {
     logout();
   },
   async isLoggedIn() {
-    // 占位符配置直接返回 false（本地模式）
     const cfg = window.APPWRITE_CONFIG;
     const isPlaceholder = !cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID' ||
       cfg.projectId === '' || cfg.databaseId === 'YOUR_DATABASE_ID' || cfg.databaseId === '' ||
       cfg.bucketId === 'YOUR_BUCKET_ID' || cfg.bucketId === '';
     if (isPlaceholder) return false;
-    if (window.AppwriteAuth) {
-      return window.AppwriteAuth.isAuthenticated();
-    }
+    if (window.AppwriteAuth) return window.AppwriteAuth.isAuthenticated();
     return isLoggedIn();
   },
   getAdmin,

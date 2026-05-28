@@ -59,6 +59,8 @@ if (isPlaceholderConfig()) {
   console.warn('🌌 Appwrite 未配置（projectId/databaseId/bucketId 为占位符），强制使用本地模式');
 }
 
+const SESSION_KEY = 'appwrite_session_secret';
+
 function getClient() {
   if (!_client) {
     if (typeof Appwrite === 'undefined') {
@@ -67,6 +69,19 @@ function getClient() {
     _client = new Appwrite.Client()
       .setEndpoint(APPWRITE_CONFIG.endpoint)
       .setProject(APPWRITE_CONFIG.projectId);
+    // 从 localStorage 恢复 JWT（跨页面/防第三方 cookie 被拦截）
+    const savedSecret = localStorage.getItem(SESSION_KEY);
+    if (savedSecret) {
+      try {
+        if (_client.setJWT) {
+          _client.setJWT(savedSecret);
+        } else if (_client.setSession) {
+          _client.setSession(savedSecret);
+        }
+      } catch (e) {
+        console.warn('恢复 session 失败:', e);
+      }
+    }
   }
   return _client;
 }
@@ -111,11 +126,32 @@ async function authRegister(email, password, name) {
 }
 
 /**
- * 邮箱密码登录
+ * 邮箱密码登录（登录成功后把 JWT secret 存到 localStorage，防止第三方 cookie 被拦截）
  */
 async function authLogin(email, password) {
   const account = getAccount();
+  // 先尝试清除服务端残留的旧 session（避免 "session is active" 报错）
+  // 忽略错误：可能没有活跃 session、网络不通、或 cookie 被拦截
+  try {
+    await account.deleteSession('current');
+  } catch (e) {
+    // 静默处理，任何错误都继续走正常登录流程
+    console.debug('清除旧 session（可忽略）:', e.message || e);
+  }
+  // 清除本地缓存的旧 JWT
+  localStorage.removeItem(SESSION_KEY);
   const session = await account.createEmailPasswordSession(email, password);
+  // 把 JWT secret 持久化到 localStorage（应对跨域/Tracking Prevention 导致 cookie 丢失）
+  if (session && session.secret) {
+    localStorage.setItem(SESSION_KEY, session.secret);
+    // 立即给 client 设置 JWT，确保后续同页面请求带认证
+    const client = getClient();
+    if (client.setJWT) {
+      client.setJWT(session.secret);
+    } else if (client.setSession) {
+      client.setSession(session.secret);
+    }
+  }
   _currentUser = await account.get();
   return session;
 }
@@ -125,8 +161,9 @@ async function authLogin(email, password) {
  */
 async function authLogout() {
   const account = getAccount();
-  await account.deleteSession('current');
+  await account.deleteSession('current').catch(() => {});
   _currentUser = null;
+  localStorage.removeItem(SESSION_KEY);
 }
 
 /**
@@ -141,7 +178,16 @@ async function getCurrentUser() {
       new Promise((_, reject) => setTimeout(() => reject(new Error('getCurrentUser 超时')), 5000))
     ]);
     return _currentUser;
-  } catch {
+  } catch (err) {
+    // JWT 过期/无效，清除本地缓存避免反复使用过期 token
+    const status = err?.code || err?.status || 0;
+    const msg = (err?.message || '').toLowerCase();
+    if (status === 401 || msg.includes('unauthorized') || msg.includes('invalid token')) {
+      localStorage.removeItem(SESSION_KEY);
+      // 同时重置 client，下次会重新初始化
+      _client = null;
+      _account = null;
+    }
     return null;
   }
 }
