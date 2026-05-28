@@ -275,7 +275,6 @@ async function dbDelete(collectionId, documentId) {
       }
       throw new Error('没有删除权限（403）。如果是旧数据，需要在 Appwrite 控制台给该文档添加你的用户权限。');
     }
-    }
     throw err;
   }
 }
