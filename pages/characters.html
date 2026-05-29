@@ -613,6 +613,42 @@
       }
     }
 
+    // 删除角色（云端）
+    async function deleteCharacter(charId) {
+      if (!confirm('确认删除此角色？不可恢复。')) return;
+      try {
+        await OCData.deleteCharacter(charId);
+        showNotification('已删除', 'success');
+        await loadCharacters();
+      } catch (e) {
+        showNotification('删除失败: ' + (e.message || ''), 'error');
+      }
+    }
+
+    // 事后注入操作按钮到每个卡片（事件委托，不碰模板字符串）
+    function _injectCharActions(container) {
+      var cards = container.querySelectorAll('.character-card');
+      cards.forEach(function(card) {
+        // 避免重复注入
+        if (card.querySelector('.char-action-bar')) return;
+        var bar = document.createElement('div');
+        bar.className = 'char-action-bar';
+        bar.style.cssText = 'padding:6px 12px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:6px;background:var(--bg-secondary);border-radius:0 0 var(--radius-md) var(--radius-md);';
+        var delBtn = document.createElement('button');
+        delBtn.className = 'btn btn-ghost btn-sm';
+        delBtn.style.cssText = 'color:var(--danger);font-size:12px;';
+        delBtn.textContent = '删除';
+        delBtn.onclick = function(e) {
+          e.stopPropagation();
+          var id = card.getAttribute('data-char-id') || '';
+          deleteCharacter(id);
+        };
+        bar.appendChild(delBtn);
+        card.appendChild(bar);
+        card.setAttribute('data-char-id', card.getAttribute('onclick')?.match(/characterId=([^']+)'/)?.[1] || '');
+      });
+    }
+
     // 加载角色列表
     async function loadCharacters(worldId = null) {
       const container = document.getElementById('charactersList');
@@ -679,6 +715,8 @@
           </div>
         `).join('');
         if (window.lucide) lucide.createIcons();
+        // 事后注入操作按钮（不修改模板字符串，避免引号转义问题）
+        _injectCharActions(container);
       } catch (err) {
         console.error('加载角色列表失败:', err);
         showNotification('加载角色列表失败：' + (err.message || ''), 'error');
@@ -920,7 +958,27 @@
           </div>
         </div>
       `).join('');
-      
+
+      // 事后注入本地模式删除按钮
+      var localCards = charactersList.querySelectorAll('.character-card');
+      localCards.forEach(function(card) {
+        if (card.querySelector('.char-action-bar')) return;
+        var btn = document.createElement('button');
+        btn.className = 'btn btn-ghost btn-sm';
+        btn.style.cssText = 'position:absolute;top:4px;right:4px;z-index:2;color:var(--danger);padding:2px 6px;font-size:11px;';
+        btn.textContent = 'x';
+        var charId = card.getAttribute('onclick')?.match(/viewCharacter\('([^']+)'\)/)?.[1] || '';
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          if (!confirm('确认删除？')) return;
+          var chars = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+          localStorage.setItem('oc_characters', JSON.stringify(chars.filter(function(c){ return c.id !== charId; })));
+          filterCharacters();
+        };
+        card.style.position = 'relative';
+        card.appendChild(btn);
+      });
+
       // 更新侧边栏选中状态
       document.querySelectorAll('.sidebar-nav-item').forEach(item => {
         item.classList.remove('active');
