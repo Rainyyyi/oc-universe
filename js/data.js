@@ -515,6 +515,15 @@ const OCDataProxy = {
   async getCharactersByWorld(worldId) {
     return withCloudFallback(() => window.API.characters.getAll(worldId), () => getCharactersByWorld(worldId));
   },
+  /**
+   * 获取指定世界的所有角色（含协作者创建的，用于统计数量）
+   */
+  async getCharactersForWorld(worldId) {
+    return withCloudFallback(
+      () => window.API.characters.getForWorld(worldId),
+      () => getCharactersByWorld(worldId) // 本地降级：用带 userId 过滤的版本
+    );
+  },
   async createCharacter(data) {
     return withCloudFallback(() => window.API.characters.create(data), () => createCharacter(data));
   },
@@ -537,6 +546,15 @@ const OCDataProxy = {
   },
   async getStoriesByWorld(worldId) {
     return withCloudFallback(() => window.API.stories.getAll(worldId), () => getStoriesByWorld(worldId));
+  },
+  /**
+   * 获取指定世界的所有故事（含协作者创建的，用于统计数量）
+   */
+  async getStoriesForWorld(worldId) {
+    return withCloudFallback(
+      () => window.API.stories.getForWorld(worldId),
+      () => getStoriesByWorld(worldId) // 本地降级
+    );
   },
   async createStory(data) {
     return withCloudFallback(() => window.API.stories.create(data), () => createStory(data));

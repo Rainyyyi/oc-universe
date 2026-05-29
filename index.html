@@ -704,27 +704,25 @@
         const toneLabels = { dark:'黑暗', light:'温馨', neutral:'中性', mixed:'明暗交织' };
 
         // 用实际查询到的角色/故事数量覆盖可能过期的 characterCount / storyCount
-        //（云端创建角色时不会回写世界观的计数字段，导致卡片显示 0）
+        // 对每个世界观单独查询（而不是全局拉取+客户端过滤），这样协作者也能看到正确的数量
         try {
-          const [allCharacters, allStories] = await Promise.all([
-            OCData.getCharacters().catch(() => []),
-            OCData.getStories().catch(() => [])
-          ]);
-          const worldIdMap = {};
-          worlds.forEach(w => { worldIdMap[w.$id || w.id] = w; });
-          // 按世界观聚合计数
-          for (const c of allCharacters) {
-            const wid = c.worldId;
-            if (wid && worldIdMap[wid]) {
-              worldIdMap[wid]._realCharCount = (worldIdMap[wid]._realCharCount || 0) + 1;
+          // 并发查询每个世界的角色数和故事数
+          const countPromises = worlds.map(async (w) => {
+            const wid = w.$id || w.id;
+            if (!wid) return;
+            try {
+              const [chars, stories] = await Promise.all([
+                OCData.getCharactersForWorld(wid).catch(() => []),
+                OCData.getStoriesForWorld(wid).catch(() => [])
+              ]);
+              w._realCharCount = chars.length;
+              w._realStoryCount = stories.length;
+            } catch (e) {
+              // 查询失败时保留默认值
+              console.warn(`统计世界「${w.name || wid}」数量失败:`, e.message);
             }
-          }
-          for (const s of allStories) {
-            const wid = s.worldId;
-            if (wid && worldIdMap[wid]) {
-              worldIdMap[wid]._realStoryCount = (worldIdMap[wid]._realStoryCount || 0) + 1;
-            }
-          }
+          });
+          await Promise.all(countPromises);
           // 回填到每个世界观对象
           worlds.forEach(w => {
             if (w._realCharCount !== undefined) w.characterCount = w._realCharCount;

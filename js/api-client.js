@@ -112,6 +112,21 @@ async function getCharacters(worldId = null) {
   return normalizeList(docs);
 }
 
+/**
+ * 获取指定世界下的所有角色（包括协作者创建的，用于统计数量）
+ * 不带 userId 过滤，依赖文档级 read 权限
+ */
+async function getCharactersForWorld(worldId) {
+  if (!worldId) return [];
+  try {
+    const docs = await window.AppwriteDB.characters.listForWorld(worldId);
+    return normalizeList(docs);
+  } catch (e) {
+    console.warn('获取世界角色数量失败（可能无权限）:', e.message);
+    return [];
+  }
+}
+
 async function getCharacter(id) {
   const doc = await window.AppwriteDB.characters.get(id);
   return normalize(doc);
@@ -139,6 +154,20 @@ async function getStories(worldId = null) {
     ? await window.AppwriteDB.stories.listByWorld(worldId)
     : await window.AppwriteDB.stories.list();
   return normalizeList(docs);
+}
+
+/**
+ * 获取指定世界下的所有故事（包括协作者创建的，用于统计数量）
+ */
+async function getStoriesForWorld(worldId) {
+  if (!worldId) return [];
+  try {
+    const docs = await window.AppwriteDB.stories.listForWorld(worldId);
+    return normalizeList(docs);
+  } catch (e) {
+    console.warn('获取世界故事数量失败（可能无权限）:', e.message);
+    return [];
+  }
 }
 
 async function getStory(id) {
@@ -270,6 +299,7 @@ window.API = {
   },
   characters: {
     getAll: getCharacters,
+    getForWorld: getCharactersForWorld,
     get: getCharacter,
     create: createCharacter,
     update: updateCharacter,
@@ -277,6 +307,7 @@ window.API = {
   },
   stories: {
     getAll: getStories,
+    getForWorld: getStoriesForWorld,
     get: getStory,
     create: createStory,
     update: updateStory,

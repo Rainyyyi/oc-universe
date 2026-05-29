@@ -307,6 +307,68 @@ async function dbList(collectionId, extraQueries = []) {
 }
 
 /**
+ * 按 worldId 查询文档（不带 userId 过滤，用于协作者查看共享世界的角色/故事）
+ * 依赖文档级别的 read 权限：创建时必须给协作者授权才能查到
+ */
+async function dbListByWorldId(collectionId, worldId) {
+  if (isPlaceholderConfig()) throw new Error('Appwrite 未配置');
+  const user = await getCurrentUser();
+  if (!user) throw new Error('未登录');
+
+  const queries = [
+    Appwrite.Query.equal('worldId', worldId),
+    Appwrite.Query.orderDesc('$createdAt'),
+    Appwrite.Query.limit(500),
+  ];
+
+  try {
+    const res = await Promise.race([
+      getDatabases().listDocuments(DB_ID(), collectionId, queries),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('dbListByWorldId 超时')), 8000))
+    ]);
+    return res.documents;
+  } catch (e) {
+    // 如果无权限（比如还没给协作者加 read 权限），降级为只查自己的
+    console.warn(`dbListByWorldId 无权访问 ${collectionId} worldId=${worldId}，降级为仅查询自己的数据:`, e.message);
+    try {
+      const fallbackRes = await Promise.race([
+        getDatabases().listDocuments(DB_ID(), collectionId, [
+          ...queries,
+          Appwrite.Query.equal('userId', user.$id),
+        ]),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('降级查询超时')), 8000))
+      ]);
+      return fallbackRes.documents;
+    } catch (e2) {
+      console.warn('降级查询也失败:', e2.message);
+      return [];
+    }
+  }
+}
+
+/**
+ * 获取指定 worldId 的世界的协作者列表，构建 read 权限数组
+ * 用于创建角色/故事时自动给协作者授权
+ */
+async function _buildCollabReadPermissions(worldId) {
+  if (!worldId) return [];
+  try {
+    const world = await dbGet(COLLECTIONS.WORLDS, worldId);
+    if (!world || !world.collaborators) return [];
+    const collabs = stringToCollabs(world.collaborators);
+    // 过滤掉空值和当前用户（创建者已经有权限了）
+    const user = await getCurrentUser().catch(() => null);
+    return collabs
+      .filter(id => id && id !== (user && user.$id))
+      .map(id => Appwrite.Permission.read(Appwrite.Role.user(id)));
+  } catch (e) {
+    // 获取协作者失败不影响创建，只是不给额外权限
+    console.warn('获取协作者列表失败，不添加额外读权限:', e.message);
+    return [];
+  }
+}
+
+/**
  * 获取单条记录（带 5 秒超时）
  */
 async function dbGet(collectionId, documentId) {
@@ -319,11 +381,21 @@ async function dbGet(collectionId, documentId) {
 
 /**
  * 创建记录（自动注入 userId，带 8 秒超时）
+ * @param {string} collectionId - 集合 ID
+ * @param {object} data - 文档数据
+ * @param {Array} [extraPermissions] - 额外权限（如给协作者的 read 权限）
  */
-async function dbCreate(collectionId, data) {
+async function dbCreate(collectionId, data, extraPermissions = []) {
   if (isPlaceholderConfig()) throw new Error('Appwrite 未配置');
   const user = await getCurrentUser();
   if (!user) throw new Error('未登录');
+
+  const permissions = [
+    Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
+    Appwrite.Permission.write(Appwrite.Role.user(user.$id)),
+    Appwrite.Permission.delete(Appwrite.Role.user($id)),
+    ...extraPermissions,
+  ];
 
   return Promise.race([
     getDatabases().createDocument(
@@ -331,12 +403,7 @@ async function dbCreate(collectionId, data) {
       collectionId,
       Appwrite.ID.unique(),
       { ...data, userId: user.$id },
-      // 给创建者完整的读写删权限
-      [
-        Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
-        Appwrite.Permission.write(Appwrite.Role.user(user.$id)),
-        Appwrite.Permission.delete(Appwrite.Role.user(user.$id)),
-      ]
+      permissions
     ),
     new Promise((_, reject) => setTimeout(() => reject(new Error('dbCreate 超时')), 8000))
   ]);
@@ -568,10 +635,19 @@ const AppwriteCharacters = {
       Appwrite.Query.equal('worldId', worldId),
     ]);
   },
+  /**
+   * 按 worldId 查询所有角色（包括协作者创建的，用于统计数量）
+   * 不带 userId 过滤，依赖文档级 read 权限
+   */
+  async listForWorld(worldId) {
+    return dbListByWorldId(COLLECTIONS.CHARACTERS, worldId);
+  },
   async get(id) {
     return dbGet(COLLECTIONS.CHARACTERS, id);
   },
   async create(data) {
+    // 获取该世界的协作者，给他们加 read 权限
+    const extraPermissions = await _buildCollabReadPermissions(data.worldId);
     return dbCreate(COLLECTIONS.CHARACTERS, {
       worldId: data.worldId,
       name: data.name,
@@ -628,10 +704,18 @@ const AppwriteStories = {
       Appwrite.Query.equal('worldId', worldId),
     ]);
   },
+  /**
+   * 按 worldId 查询所有故事（包括协作者创建的，用于统计数量）
+   */
+  async listForWorld(worldId) {
+    return dbListByWorldId(COLLECTIONS.STORIES, worldId);
+  },
   async get(id) {
     return dbGet(COLLECTIONS.STORIES, id);
   },
   async create(data) {
+    // 获取该世界的协作者，给他们加 read 权限
+    const extraPermissions = await _buildCollabReadPermissions(data.worldId);
     return dbCreate(COLLECTIONS.STORIES, {
       worldId: data.worldId,
       title: data.title,
