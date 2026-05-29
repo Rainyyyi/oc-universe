@@ -388,7 +388,7 @@
 
   <!-- 分享/邀请协作者模态框 -->
   <div class="modal-overlay" id="shareModal">
-    <div class="modal" style="max-width:440px;">
+    <div class="modal" style="max-width:460px;">
       <div class="modal-header">
         <h3 style="margin:0;">邀请协作者</h3>
         <button class="modal-close" onclick="closeModal('shareModal')">
@@ -397,14 +397,82 @@
       </div>
       <div class="modal-body" id="shareModalBody">
         <p class="text-muted text-sm" id="shareWorldName" style="margin-bottom:var(--spacing-md);"></p>
-        <label style="display:block;margin-bottom:6px;font-size:0.875rem;font-weight:500;color:var(--text-secondary);">用户 ID 或邮箱</label>
-        <input type="text" id="shareUserInput" class="form-input" placeholder="输入要邀请的用户 Appwrite ID 或邮箱" style="width:100%;box-sizing:border-box;" onkeydown="if(event.key==='Enter')event.preventDefault();if(event.key==='Enter')inviteCollaborator();">
+
+        <!-- 我的信息卡片：显示用户ID供好友使用 -->
+        <div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:14px;border:1px solid var(--border-light);">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 6px;font-weight:500;">把你的用户 ID 发给好友，让他们在这里填入：</p>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <code id="myUserIdDisplay" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:7px 10px;font-size:0.82rem;color:var(--primary-color);word-break:break-all;overflow-wrap:break-word;"></code>
+            <button class="btn btn-primary btn-sm" onclick="copyMyUserId()" title="复制到剪贴板" style="white-space:nowrap;padding:6px 10px;font-size:0.8rem;">
+              <i data-lucide="Copy"></i> 复制
+            </button>
+          </div>
+        </div>
+
+        <label style="display:block;margin-bottom:6px;font-size:0.875rem;font-weight:500;color:var(--text-secondary);">好友的 Appwrite 用户 ID</label>
+        <input type="text" id="shareUserInput" class="form-input" placeholder="输入好友的用户 ID（不是邮箱）" style="width:100%;box-sizing:border-box;" onkeydown="if(event.key==='Enter')event.preventDefault();if(event.key==='Enter')inviteCollaborator();">
         <div id="collaboratorsList" style="margin-top:var(--spacing-md);"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('shareModal')">取消</button>
         <button class="btn btn-primary" onclick="inviteCollaborator()">
           <i data-lucide="UserPlus"></i> 邀请
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 账号设置模态框 -->
+  <div class="modal-overlay" id="accountModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 style="margin:0;">账号设置</h3>
+        <button class="modal-close" onclick="closeModal('accountModal')">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="accountModalBody" style="max-height:70vh;overflow-y:auto;">
+
+        <!-- 头像 + 昵称 -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border-light);">
+          <div id="avatarPreview" style="width:64px;height:64px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:var(--primary-color);cursor:pointer;overflow:hidden;flex-shrink:0;" onclick="document.getElementById('avatarInput').click();" title="点击更换头像">
+            <span id="avatarText">?</span>
+          </div>
+          <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+          <div style="flex:1;min-width:0;">
+            <label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">显示名称</label>
+            <input type="text" id="settingsName" class="form-input" style="width:100%;" placeholder="你的昵称/显示名" maxlength="50">
+          </div>
+        </div>
+
+        <!-- 用户 ID（只读） -->
+        <div style="margin-bottom:16px;padding:10px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border-light);">
+          <label style="display:block;font-size:0.78rem;color:var(--text-muted);margin-bottom:5px;">Appwrite 用户 ID</label>
+          <code id="settingsUserId" style="font-size:0.8rem;color:var(--text-secondary);word-break:break-all;"></code>
+          <button class="btn btn-ghost btn-sm" onclick="copyMyUserId()" style="margin-left:8px;padding:2px 8px;font-size:0.75rem;"><i data-lucide="Copy"></i> 复制</button>
+        </div>
+
+        <!-- 邮箱 -->
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:0.85rem;font-weight:500;color:var(--text-secondary);margin-bottom:5px;">邮箱地址</label>
+          <span id="settingsEmail" style="color:var(--text-muted);font-size:0.9rem;"></span>
+        </div>
+
+        <!-- 修改密码 -->
+        <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid var(--border-light);">
+          <h4 style="font-size:0.9rem;margin:0 0 10px;color:var(--text-primary);">修改密码</h4>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input type="password" id="settingsOldPwd" class="form-input" placeholder="当前密码" style="width:100%;">
+            <input type="password" id="settingsNewPwd" class="form-input" placeholder="新密码（至少 6 位）" style="width:100%;">
+            <button class="btn btn-secondary btn-sm" onclick="updateUserPassword()" style="width:auto;">保存密码</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('accountModal')">关闭</button>
+        <button class="btn btn-primary" onclick="saveAccountSettings()">
+          <i data-lucide="Check"></i> 保存更改
         </button>
       </div>
     </div>
@@ -724,10 +792,7 @@
     let _shareWorldId = null;
     function showShareModal(worldId, worldName) {
       _shareWorldId = worldId;
-      document.getElementById('shareWorldName').textContent = '分享世界观：' + worldName;
-      document.getElementById('shareUserInput').value = '';
-      renderCollaboratorsList(worldId);
-      document.getElementById('shareModal').classList.add('active');
+      openShareModal(worldId);
     }
 
     // 渲染当前协作者列表
@@ -920,10 +985,225 @@
       }
     }
     
-    // 显示用户信息
+    // 显示用户信息（改为账号设置面板）
     async function showUserInfo() {
-      const user = await AppwriteAuth.getCurrentUser().catch(() => null);
-      if (user) alert(`当前用户：${user.name || ''}\n邮箱：${user.email}`);
+      await openAccountSettings();
+    }
+
+    // 复制我的 Appwrite 用户 ID 到剪贴板
+    async function copyMyUserId() {
+      const user = await window.AppwriteAuth.getCurrentUser().catch(() => null);
+      if (!user || !user.$id) { showNotification('未登录或无法获取用户 ID', 'error'); return; }
+      try {
+        await navigator.clipboard.writeText(user.$id);
+        showNotification('已复制用户 ID：' + user.$id, 'success');
+      } catch(e) {
+        // fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = user.$id;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showNotification('已复制用户 ID', 'success');
+      }
+    }
+
+    // 打开分享弹窗时加载当前用户 ID
+    async function openShareModal(worldId) {
+      _shareWorldId = worldId;
+      const modal = document.getElementById('shareModal');
+      const nameEl = document.getElementById('shareWorldName');
+
+      try {
+        let world;
+        if (typeof OCData !== 'undefined' && OCData.getWorld) {
+          world = await OCData.getWorld(worldId);
+        } else {
+          world = getWorld(worldId);
+        }
+        nameEl.textContent = world ? ('分享世界观：' + world.name) : '';
+      } catch(e) {
+        nameEl.textContent = '';
+      }
+
+      // 显示当前用户的 Appwrite ID
+      const userIdDisplay = document.getElementById('myUserIdDisplay');
+      const user = await window.AppwriteAuth.getCurrentUser().catch(() => null);
+      if (userIdDisplay) {
+        userIdDisplay.textContent = user?.$id || '请先登录';
+      }
+
+      modal.classList.add('active');
+      renderCollaboratorsList(worldId);
+
+      // 清空输入框
+      const input = document.getElementById('shareUserInput');
+      if (input) input.value = '';
+    }
+
+    // 打开账号设置面板
+    async function openAccountSettings() {
+      const modal = document.getElementById('accountModal');
+      if (!modal) return;
+      
+      const user = await window.AppwriteAuth.getCurrentUser().catch(() => null);
+      if (!user) {
+        showLoginModal();
+        return;
+      }
+      
+      // 填充信息
+      const nameEl = document.getElementById('settingsName');
+      const uidEl = document.getElementById('settingsUserId');
+      const emailEl = document.getElementById('settingsEmail');
+      const avatarText = document.getElementById('avatarText');
+      const avatarPreview = document.getElementById('avatarPreview');
+      
+      if (nameEl) nameEl.value = user.name || '';
+      if (uidEl) uidEl.textContent = user.$id || '-';
+      if (emailEl) emailEl.textContent = user.email || '';
+
+      // 头像显示（首字母 or prefs 中存储的头像 URL）
+      if (avatarText) avatarText.textContent = (user.name || '?')[0];
+      if (user.prefs && user.prefs.avatarUrl) {
+        if (avatarPreview) {
+          avatarPreview.style.backgroundImage = 'url(' + user.prefs.avatarUrl + ')';
+          avatarPreview.style.backgroundSize = 'cover';
+          avatarPreview.style.backgroundPosition = 'center';
+        }
+        if (avatarText) avatarText.style.display = 'none';
+      } else if (avatarPreview) {
+        avatarPreview.style.backgroundImage = '';
+        if (avatarText) avatarText.style.display = '';
+      }
+
+      // 清空密码输入框
+      const oldPwd = document.getElementById('settingsOldPwd');
+      const newPwd = document.getElementById('settingsNewPwd');
+      if (oldPwd) oldPwd.value = '';
+      if (newPwd) newPwd.value = '';
+
+      modal.classList.add('active');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // 预览头像上传
+    function previewAvatar(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      if (!file.type.startsWith('image/')) {
+        showNotification('请选择图片文件', 'warning');
+        input.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showNotification('图片不能超过 5MB', 'warning');
+        input.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById('avatarPreview');
+        const text = document.getElementById('avatarText');
+        if (preview) {
+          preview.style.backgroundImage = 'url(' + e.target.result + ')';
+          preview.style.backgroundSize = 'cover';
+          preview.style.backgroundPosition = 'center';
+        }
+        if (text) text.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 保存账号设置（昵称 + 头像）
+    async function saveAccountSettings() {
+      const nameInput = document.getElementById('settingsName');
+      const newName = nameInput?.value.trim();
+
+      if (!newName) {
+        showNotification('请填写显示名称', 'warning');
+        return;
+      }
+
+      try {
+        // 更新名称
+        if (window.AppwriteAuth && typeof AppwriteAuth.updateUserName === 'function') {
+          await AppwriteAuth.updateUserName(newName);
+        } else if (typeof updateUserName === 'function') {
+          await updateUserName(newName);
+        }
+
+        // 更新头像（如果有选择文件）
+        const avatarInput = document.getElementById('avatarInput');
+        if (avatarInput && avatarInput.files[0] && window.AppwriteAuth) {
+          const file = avatarInput.files[0];
+          let fileUrl = null;
+          
+          // 尝试通过 API 上传到 Storage
+          try {
+            if (window.API && window.API.storage) {
+              const result = await window.API.storage.upload(file);
+              fileUrl = result.url;
+            } else if (typeof uploadAvatar === 'function') {
+              fileUrl = await uploadAvatar(file);
+            }
+            if (fileUrl && window.AppwriteAuth.updateUserPrefs) {
+              const oldPrefs = {};
+              const currentUser = await AppwriteAuth.getCurrentUser().catch(() => null);
+              if (currentUser && currentUser.prefs) Object.assign(oldPrefs, currentUser.prefs);
+              oldPrefs.avatarUrl = fileUrl;
+              await AppwriteAuth.updateUserPrefs(oldPrefs);
+            }
+          } catch(e) {
+            console.warn('头像上传失败，仅更新名称:', e.message);
+          }
+        }
+
+        closeModal('accountModal');
+        showNotification('账号信息已更新', 'success');
+        
+        // 刷新导航栏显示的名称
+        const nameSpan = document.getElementById('userNameDisplay');
+        if (nameSpan) nameSpan.textContent = newName;
+
+        // 清除缓存让下次获取最新数据
+        _currentUser = null;
+      } catch(e) {
+        showNotification('保存失败：' + (e.message || e), 'error');
+      }
+    }
+
+    // 修改密码
+    async function updateUserPassword() {
+      const oldPwd = document.getElementById('settingsOldPwd');
+      const newPwd = document.getElementById('settingsNewPwd');
+      const oldVal = oldPwd?.value;
+      const newVal = newPwd?.value;
+
+      if (!oldVal || !newVal) {
+        showNotification('请填写当前密码和新密码', 'warning');
+        return;
+      }
+      if (newVal.length < 6) {
+        showNotification('新密码至少需要 6 位', 'warning');
+        return;
+      }
+
+      try {
+        if (window.AppwriteAuth && typeof AppwriteAuth.updateUserPassword === 'function') {
+          await AppwriteAuth.updateUserPassword(newVal, oldVal);
+        } else if (typeof updateUserPassword === 'function') {
+          await updateUserPassword(newVal, oldVal);
+        } else {
+          throw new Error('暂不支持在线改密');
+        }
+        showNotification('密码已更新', 'success');
+        oldPwd.value = '';
+        newPwd.value = '';
+      } catch(e) {
+        showNotification('修改密码失败：' + (e.message || e), 'error');
+      }
     }
     
     // 退出登录

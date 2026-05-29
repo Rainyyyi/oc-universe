@@ -455,7 +455,9 @@ function collabsToString(arr) {
   return arr.join(',');
 }
 function stringToCollabs(str) {
-  if (!str || typeof str !== 'string') return [];
+  if (!str) return [];
+  if (Array.isArray(str)) return str.filter(id => id && typeof id === 'string').map(id => id.trim()).filter(Boolean);
+  if (typeof str !== 'string') return [];
   return str.split(',').filter(id => id.trim()).map(id => id.trim());
 }
 
@@ -812,6 +814,32 @@ window.AppwriteAuth = {
   logout: authLogout,
   getCurrentUser,
   isAuthenticated,
+  updateUserName: async function(name) {
+    const acc = getAccount();
+    await Promise.race([
+      acc.updateName(name),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('更新名称超时')), 5000))
+    ]);
+    _currentUser = null; // 清缓存，下次获取最新数据
+    return true;
+  },
+  updateUserPassword: async function(newPassword, oldPassword) {
+    const acc = getAccount();
+    await Promise.race([
+      acc.updatePassword(newPassword, oldPassword),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('修改密码超时')), 5000))
+    ]);
+    return true;
+  },
+  updateUserPrefs: async function(prefs) {
+    const acc = getAccount();
+    await Promise.race([
+      acc.updatePrefs(prefs),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('更新偏好超时')), 5000))
+    ]);
+    _currentUser = null;
+    return true;
+  },
 };
 
 window.AppwriteDB = {
