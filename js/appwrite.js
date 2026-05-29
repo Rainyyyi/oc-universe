@@ -462,6 +462,10 @@ function stringToCollabs(str) {
 /**
  * 协作查询：我的世界 + 分享给我的世界
  * 合并两个查询结果并去重
+ *
+ * 查询策略（三级降级）：
+ * 1. Query.search  — 需要 collaborators 字段有 Fulltext Index（Appwrite 控制台手动建）
+ * 2. 拉全量 + 客户端过滤 — 兜底方案，数据量大时较慢但不需要索引
  */
 async function dbListWithCollabs(collectionId) {
   const user = await getCurrentUser();
@@ -469,11 +473,12 @@ async function dbListWithCollabs(collectionId) {
 
   // 1. 查我自己创建的
   const myDocs = await dbList(collectionId);
+  const myIds = new Set(myDocs.map(d => d.$id));
 
-  // 2. 查分享给我的（collaborators 字符串包含我的 ID）
+  // 2. 查分享给我的（优先 Query.search，需要 Fulltext 索引）
   let sharedDocs = [];
   try {
-    sharedDocs = await Promise.race([
+    const res = await Promise.race([
       getDatabases().listDocuments(DB_ID(), collectionId, [
         Appwrite.Query.search('collaborators', user.$id),
         Appwrite.Query.orderDesc('$createdAt'),
@@ -481,14 +486,31 @@ async function dbListWithCollabs(collectionId) {
       ]),
       new Promise((_, reject) => setTimeout(() => reject(new Error('协作查询超时')), 8000))
     ]);
-    sharedDocs = sharedDocs.documents || [];
+    sharedDocs = (res.documents || []).filter(d => !myIds.has(d.$id));
   } catch (e) {
-    console.warn('协作查询失败，仅显示自己的数据:', e.message);
+    if (e.message && e.message.includes('fulltext index')) {
+      // 降级：拉取最近500条，客户端过滤 collaborators 包含当前用户ID
+      console.warn('collaborators 缺少 Fulltext Index，使用客户端过滤（降级模式）。建议在 Appwrite 控制台为 worlds.collaborators 建 Fulltext 索引。');
+      try {
+        const all = await getDatabases().listDocuments(DB_ID(), collectionId, [
+          Appwrite.Query.orderDesc('$createdAt'),
+          Appwrite.Query.limit(500),
+        ]);
+        sharedDocs = (all.documents || []).filter(d => {
+          if (myIds.has(d.$id)) return false;
+          const collabs = stringToCollabs(d.collaborators);
+          return collabs.includes(user.$id);
+        });
+      } catch (e2) {
+        console.warn('协作降级查询也失败，仅显示自己的数据:', e2.message);
+      }
+    } else {
+      console.warn('协作查询失败，仅显示自己的数据:', e.message);
+    }
   }
 
   // 合并去重
-  const ids = new Set(myDocs.map(d => d.$id));
-  return [...myDocs, ...sharedDocs.filter(d => !ids.has(d.$id))];
+  return [...myDocs, ...sharedDocs];
 }
 
 const AppwriteWorlds = {
