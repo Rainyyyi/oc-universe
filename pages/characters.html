@@ -526,16 +526,7 @@
       
       alert('分类已删除');
     }
-
-    // 本地模式删除角色
-    function deleteLocalCharacter(charId) {
-      if (!confirm('确认删除此角色？')) return;
-      var chars = JSON.parse(localStorage.getItem('oc_characters') || '[]');
-      chars = chars.filter(function(c){ return c.id !== charId; });
-      localStorage.setItem('oc_characters', JSON.stringify(chars));
-      filterCharacters();
-    }
-
+    
     // 显示创建角色模态框
     async function showCreateCharacterModal() {
       // 加载世界观到下拉框
@@ -622,19 +613,6 @@
       }
     }
 
-    // 删除角色
-    async function deleteCharacter(charId) {
-      if (!confirm('确认删除此角色？此操作不可恢复。')) return;
-      try {
-        await OCData.deleteCharacter(charId);
-        showNotification('角色已删除', 'success');
-        await loadCharacters();
-      } catch (err) {
-        console.error('删除角色失败:', err);
-        showNotification('删除失败：' + (err.message || ''), 'error');
-      }
-    }
-
     // 加载角色列表
     async function loadCharacters(worldId = null) {
       const container = document.getElementById('charactersList');
@@ -697,10 +675,6 @@
                 ${c.age ? `<span class="badge" style="font-size:0.7rem;">${c.age}岁</span>` : ''}
               </div>` : ''}
               ${c.personality || c.description ? `<p class="text-muted text-sm" style="margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${c.personality || c.description}</p>` : ''}
-            </div>
-            <div class="card-footer" style="padding:8px 12px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:6px;">
-              <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();" title="编辑">EDIT</button>
-              <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteCharacter('${c.$id || c.id}')" style="color:var(--danger);" title="删除">DEL</button>
             </div>
           </div>
         `).join('');
@@ -932,8 +906,7 @@
       
       // 渲染角色卡片
       charactersList.innerHTML = filteredCharacters.map(character => `
-        <div class="card character-card" style="position:relative;" onclick="viewCharacter('${character.id}')">
-          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteLocalCharacter('${character.id}')" style="position:absolute;top:6px;right:6px;z-index:2;color:var(--danger);padding:4px;line-height:1;" title="删除">x</button>
+        <div class="card character-card" onclick="viewCharacter('${character.id}')">
           <div class="card-body" style="text-align: center;">
             <img src="${character.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + character.name}"
                  alt="${character.name}"
