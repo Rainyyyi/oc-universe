@@ -393,7 +393,7 @@ async function dbCreate(collectionId, data, extraPermissions = []) {
   const permissions = [
     Appwrite.Permission.read(Appwrite.Role.user(user.$id)),
     Appwrite.Permission.write(Appwrite.Role.user(user.$id)),
-    Appwrite.Permission.delete(Appwrite.Role.user($id)),
+    Appwrite.Permission.delete(Appwrite.Role.user(user.$id)),
     ...extraPermissions,
   ];
 
