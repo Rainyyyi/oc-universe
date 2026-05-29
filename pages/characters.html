@@ -295,7 +295,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('createCharacterModal')">取消</button>
-        <button class="btn btn-primary" onclick="saveCharacter()">
+        <button class="btn btn-primary" onclick="createCharacter()">
           <i data-lucide="Plus"></i>
           创建角色
         </button>
@@ -527,12 +527,12 @@
       alert('分类已删除');
     }
 
-    // 本地模式：删除角色
-    function deleteLocalCharacter(charId, charName) {
-      if (!confirm(`确认删除角色「${charName}」？\n此操作不可恢复。`)) return;
-      let characters = JSON.parse(localStorage.getItem('oc_characters') || '[]');
-      characters = characters.filter(c => c.id !== charId);
-      localStorage.setItem('oc_characters', JSON.stringify(characters));
+    // 本地模式删除角色
+    function deleteLocalCharacter(charId) {
+      if (!confirm('确认删除此角色？')) return;
+      var chars = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+      chars = chars.filter(function(c){ return c.id !== charId; });
+      localStorage.setItem('oc_characters', JSON.stringify(chars));
       filterCharacters();
     }
 
@@ -582,8 +582,8 @@
       document.getElementById(id).classList.remove('active');
     }
     
-    // 保存角色（创建 / 编辑）
-    async function saveCharacter() {
+    // 创建角色
+    async function createCharacter() {
       const name = document.getElementById('charName').value.trim();
       const worldId = document.getElementById('characterWorldSelect').value;
       const age = document.getElementById('charAge').value;
@@ -608,83 +608,23 @@
       };
 
       try {
-        if (_editingCharId) {
-          // 编辑模式
-          await OCData.updateCharacter(_editingCharId, data);
-          showNotification('角色已更新！', 'success');
-          _editingCharId = null;
-        } else {
-          // 创建模式
-          await OCData.createCharacter(data);
-          showNotification('角色创建成功！', 'success');
-        }
+        await OCData.createCharacter(data);
+        showNotification('角色创建成功！', 'success');
         closeModal('createCharacterModal');
-        // 清空表单，恢复创建状态
-        _resetCharacterForm();
+        // 清空表单
+        document.getElementById('createCharacterForm').reset();
+        document.getElementById('avatarPreview').src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+        // 刷新列表
         await loadCharacters();
       } catch (err) {
-        console.error('保存角色失败:', err);
-        showNotification('保存角色失败：' + (err.message || '未知错误'), 'error');
-      }
-    }
-
-    // 重置角色表单到创建模式
-    function _resetCharacterForm() {
-      _editingCharId = null;
-      document.getElementById('createCharacterForm')?.reset();
-      const avatarPreview = document.getElementById('avatarPreview');
-      if (avatarPreview) avatarPreview.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
-      const modalTitle = document.querySelector('#createCharacterModal h3') || document.querySelector('#createCharacterModal .modal-header h3');
-      if (modalTitle) modalTitle.textContent = '创建新角色';
-      const submitBtn = document.querySelector('#createCharacterModal button[onclick="saveCharacter()"]');
-      if (submitBtn) {
-        submitBtn.innerHTML = '<i data-lucide="Plus"></i> 创建角色';
-        if (window.lucide) lucide.createIcons();
-      }
-    }
-
-    // 编辑角色（打开创建模态框并填充数据）
-    let _editingCharId = null;
-    async function editCharacter(charId) {
-      try {
-        const c = await OCData.getCharacter(charId);
-        if (!c) { showNotification('角色不存在', 'error'); return; }
-        _editingCharId = charId;
-
-        // 填充表单
-        document.getElementById('charName').value = c.name || '';
-        document.getElementById('charAge').value = c.age || '';
-        document.getElementById('charGender').value = c.gender || '';
-        document.getElementById('charTags').value = Array.isArray(c.tags) ? c.tags.join(', ') : (c.tags || '');
-        document.getElementById('charDescription').value = c.description || c.personality || '';
-
-        // 世界观选择
-        const worldSelect = document.getElementById('charWorld');
-        if (worldSelect && c.worldId) worldSelect.value = c.worldId;
-
-        // 头像预览
-        const avatarPreview = document.getElementById('avatarPreview');
-        if (avatarPreview && c.avatarUrl) avatarPreview.src = c.avatarUrl;
-
-        // 改标题和按钮文字
-        const modalTitle = document.querySelector('#createCharacterModal h3') || document.querySelector('#createCharacterModal .modal-header h3');
-        if (modalTitle) modalTitle.textContent = '编辑角色';
-        const submitBtn = document.querySelector('#createCharacterModal button[onclick="saveCharacter()"]');
-        if (submitBtn) {
-          submitBtn.innerHTML = '<i data-lucide="Check"></i> 保存修改';
-          if (window.lucide) lucide.createIcons();
-        }
-
-        document.getElementById('createCharacterModal').classList.add('active');
-      } catch (err) {
-        console.error('加载角色数据失败:', err);
-        showNotification('加载角色失败：' + (err.message || ''), 'error');
+        console.error('创建角色失败:', err);
+        showNotification('创建角色失败：' + (err.message || '未知错误'), 'error');
       }
     }
 
     // 删除角色
-    async function deleteCharacter(charId, charName) {
-      if (!confirm(`确认删除角色「${charName}」？\n此操作不可恢复。`)) return;
+    async function deleteCharacter(charId) {
+      if (!confirm('确认删除此角色？此操作不可恢复。')) return;
       try {
         await OCData.deleteCharacter(charId);
         showNotification('角色已删除', 'success');
@@ -744,7 +684,7 @@
         }
 
         container.innerHTML = list.map(c => `
-          <div class="card character-card" style="cursor:pointer;" onclick="window.location.href='pages/chat.html?characterId=${c.$id || c.id}'">
+          <div class="card character-card" style="cursor:pointer;" onclick="window.location.href='chat.html?characterId=${c.$id || c.id}'">
             <div class="card-cover" style="height:160px;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius-md) var(--radius-md) 0 0;">
               ${c.avatarUrl
                 ? `<img src="${c.avatarUrl}" style="width:100%;height:100%;object-fit:cover;" alt="${c.name}">`
@@ -758,15 +698,12 @@
               </div>` : ''}
               ${c.personality || c.description ? `<p class="text-muted text-sm" style="margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${c.personality || c.description}</p>` : ''}
             </div>
-            <div class="card-footer" style="padding:var(--spacing-sm) var(--spacing-md);border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:var(--spacing-xs);">
-              <button class="btn btn-ghost btn-sm btn-icon" title="编辑" onclick="event.stopPropagation();editCharacter('${c.$id || c.id}')">
-                <i data-lucide="Edit"></i>
-              </button>
-              <button class="btn btn-ghost btn-sm btn-icon" style="color:var(--danger);" title="删除" onclick="event.stopPropagation();deleteCharacter('${c.$id || c.id}','${(c.name||'').replace(/'/g,"\\'")}')">
-                <i data-lucide="Trash2"></i>
-              </button>
+            <div class="card-footer" style="padding:8px 12px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:6px;">
+              <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();" title="编辑">EDIT</button>
+              <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteCharacter('${c.$id || c.id}')" style="color:var(--danger);" title="删除">DEL</button>
             </div>
-          </div>`).join('');
+          </div>
+        `).join('');
         if (window.lucide) lucide.createIcons();
       } catch (err) {
         console.error('加载角色列表失败:', err);
@@ -996,9 +933,7 @@
       // 渲染角色卡片
       charactersList.innerHTML = filteredCharacters.map(character => `
         <div class="card character-card" style="position:relative;" onclick="viewCharacter('${character.id}')">
-          <button class="btn btn-ghost btn-icon" style="position:absolute;top:8px;right:8px;z-index:2;color:var(--danger);" title="删除" onclick="event.stopPropagation();deleteLocalCharacter('${character.id}','${(character.name||'').replace(/'/g,"\\'")}')">
-            <i data-lucide="Trash2" style="width:14px;height:14px;"></i>
-          </button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteLocalCharacter('${character.id}')" style="position:absolute;top:6px;right:6px;z-index:2;color:var(--danger);padding:4px;line-height:1;" title="删除">x</button>
           <div class="card-body" style="text-align: center;">
             <img src="${character.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + character.name}"
                  alt="${character.name}"
