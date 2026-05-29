@@ -462,7 +462,7 @@
               <h3 class="card-title">快捷操作</h3>
             </div>
             <div class="card-body">
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacing-md);">
+              <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--spacing-md);">
                 <div class="quick-action" onclick="window.location.href='characters.html'">
                   <i data-lucide="UserPlus"></i>
                   <span class="text-sm">创建角色</span>
@@ -475,25 +475,13 @@
                   <i data-lucide="MessageSquare"></i>
                   <span class="text-sm">AI聊天</span>
                 </div>
-                <div class="quick-action" onclick="showImportModal()">
-                  <i data-lucide="Upload"></i>
-                  <span class="text-sm">导入数据</span>
-                </div>
-                <div class="quick-action" onclick="exportAll()">
-                  <i data-lucide="Download"></i>
-                  <span class="text-sm">导出备份</span>
-                </div>
                 <div class="quick-action" onclick="window.location.href='relationship-map.html'">
                   <i data-lucide="GitBranch"></i>
                   <span class="text-sm">关系图谱</span>
                 </div>
-                <div class="quick-action" onclick="goToChat()">
-                  <i data-lucide="Brain"></i>
-                  <span class="text-sm">训练AI</span>
-                </div>
-                <div class="quick-action" onclick="switchAdminTab('dashboard', event); setTimeout(() => document.getElementById('statsSection')?.scrollIntoView({behavior:'smooth'}), 100)">
-                  <i data-lucide="BarChart3"></i>
-                  <span class="text-sm">数据统计</span>
+                <div class="quick-action" onclick="switchAdminTab('backup', event)">
+                  <i data-lucide="Database"></i>
+                  <span class="text-sm">备份导出</span>
                 </div>
               </div>
             </div>
@@ -533,19 +521,12 @@
           <div class="page-title">
             <h1>成员管理</h1>
           </div>
-          <div class="page-actions">
-            <button class="btn btn-primary">
-              <i data-lucide="UserPlus"></i>
-              邀请成员
-            </button>
-          </div>
         </header>
 
         <div class="card">
-          <div class="card-body">
-            <div class="empty-state" style="padding: var(--spacing-xl); text-align: center; color: var(--text-muted);">
-              <p>暂无成员数据</p>
-              <p class="text-sm">创建角色后会显示相关信息</p>
+          <div class="card-body" id="memberListBody">
+            <div style="text-align:center; padding:var(--spacing-xl); color:var(--text-muted);">
+              <p>正在加载...</p>
             </div>
           </div>
         </div>
@@ -947,8 +928,9 @@
 
     // 成员管理 tab 显示角色列表
     async function loadMemberList() {
-      const card = document.querySelector('#tab-members .card-body');
+      const card = document.getElementById('memberListBody');
       if (!card) return;
+      card.innerHTML = '<div style="text-align:center;padding:var(--spacing-lg);color:var(--text-muted);">正在加载...</div>';
       let chars;
       try { chars = await OCData.getCharacters().catch(() => []); } catch { chars = []; }
       if (!chars || chars.length === 0) {
@@ -962,11 +944,12 @@
           <div style="width:40px;height:40px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--primary-color);font-size:1rem;">${(c.name || '?')[0]}</div>
           <div style="flex:1;">
             <div style="font-weight:500;">${esc(c.name || '未命名')}</div>
-            <div class="text-sm text-muted">${c.gender || ''} ${(c.age || '') ? ' · ' + c.age : ''}${c.tags ? ' · ' + esc(c.tags) : ''}</div>
+            <div class="text-sm text-muted">${c.gender || ''}${(c.age || '') ? ' · ' + c.age + '岁' : ''}${c.tags ? ' · ' + esc(c.tags) : ''}</div>
           </div>
           <span class="tag" style="background:var(--primary-color);color:#fff;font-size:0.75rem;">角色</span>
         </div>`
       ).join('')}</div>`;
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
     }
 
     // 工具函数
