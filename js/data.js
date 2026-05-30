@@ -566,7 +566,10 @@ const OCDataProxy = {
     return withCloudFallback(() => window.API.stories.create(data), () => createStory(data));
   },
   async updateStory(id, data) {
-    return withCloudFallback(() => window.API.stories.update(id, data), () => updateStory(id, data));
+    return withCloudFallback(
+      () => window.API.stories.update(id, data),
+      () => { return updateItem(STORAGE_KEYS.STORIES, id, data); }
+    );
   },
   async deleteStory(id) {
     return withCloudFallback(() => window.API.stories.delete(id), () => deleteStory(id));

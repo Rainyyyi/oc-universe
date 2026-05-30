@@ -535,7 +535,7 @@
 
       try {
         // 云端 stories 集合字段：worldId/title/summary/content/status/wordCount/characters/locations/chapters
-        await OCData.createStory({
+        const newStory = await OCData.createStory({
           title, worldId, type: storyType,
           summary: description, content: '',
           characters: characterIds
@@ -552,9 +552,19 @@
         const hint = document.getElementById('storyCharHint');
         if (hint) { hint.textContent = '点击展开选择角色...'; }
         _charPickLoaded = false;
-        showNotification('故事创建成功！', 'success');
-        await loadStories();
         _worldNameCache = null;
+
+        // 创建成功 → 直接跳转到写作编辑器
+        const storyId = (newStory && (newStory.$id || newStory.id));
+        if (storyId) {
+          showNotification('故事创建成功！正在进入写作模式...', 'success');
+          setTimeout(() => {
+            window.location.href = `story-editor.html?storyId=${encodeURIComponent(storyId)}`;
+          }, 600);
+        } else {
+          showNotification('故事已创建，但无法获取ID，请手动进入', 'warning');
+          await loadStories();
+        }
       } catch (err) {
         console.error('创建故事失败:', err);
         showNotification('创建失败：' + (err.message || '未知错误'), 'error');
