@@ -362,74 +362,74 @@
   ======================================================== */
   function _buildPlanetTextureDiv(th, type) {
     const p = th.primary;
-    // 用极高对比度的颜色：亮色 > 底色很多，暗色 < 底色很多
-    const bright = lighten(p, 70);   // 亮条
-    const dark   = darken(p, 75);    // 暗条
-    const mid    = lighten(p, 30);   // 中亮
+    // 柔和纹理：同色系微调，淡入球面
+    const bright = lighten(p, 32);   // 浅纹
+    const dark   = darken(p, 28);    // 深纹
+    const mid    = lighten(p, 16);   // 中浅
 
     let stripes;
     switch (type) {
       case 'fantasy':
-        // 粗斜条纹：亮/暗交替 + 透明留白
+        // 斜向宽带纹理，有节奏的空隙
         stripes = `repeating-linear-gradient(135deg,
-          ${bright} 0px, ${bright} 12px,
-          ${dark} 12px, ${dark} 24px,
-          transparent 24px, transparent 28px,
-          ${mid} 28px, ${mid} 34px,
-          ${dark} 34px, ${dark} 40px,
-          transparent 40px, transparent 48px)`;
+          ${bright} 0px, ${bright} 10px,
+          ${dark} 10px, ${dark} 20px,
+          transparent 20px, transparent 26px,
+          ${mid} 26px, ${mid} 34px,
+          ${dark} 34px, ${dark} 38px,
+          transparent 38px, transparent 48px)`;
         break;
       case 'scifi':
-        // 水平粗细条纹
+        // 水平金属质感条纹
         stripes = `repeating-linear-gradient(0deg,
-          ${bright} 0px, ${bright} 10px,
-          ${dark} 10px, ${dark} 18px,
-          transparent 18px, transparent 22px,
-          ${mid} 22px, ${mid} 28px,
-          ${dark} 28px, ${dark} 36px,
-          transparent 36px, transparent 44px)`;
-        break;
-      case 'modern':
-        // 垂直条纹
-        stripes = `repeating-linear-gradient(90deg,
-          ${bright} 0px, ${bright} 8px,
-          ${dark} 8px, ${dark} 16px,
-          transparent 16px, transparent 20px,
-          ${mid} 20px, ${mid} 26px,
-          ${dark} 26px, ${dark} 32px,
-          transparent 32px, transparent 42px)`;
-        break;
-      case 'historical':
-        // 十字交叉网格纹
-        stripes = `repeating-linear-gradient(45deg,
           ${bright} 0px, ${bright} 8px,
           ${dark} 8px, ${dark} 14px,
-          transparent 14px, transparent 18px),
+          transparent 14px, transparent 18px,
+          ${mid} 18px, ${mid} 24px,
+          ${dark} 24px, ${dark} 30px,
+          transparent 30px, transparent 38px)`;
+        break;
+      case 'modern':
+        // 垂直简洁条纹
+        stripes = `repeating-linear-gradient(90deg,
+          ${bright} 0px, ${bright} 8px,
+          ${dark} 8px, ${dark} 14px,
+          transparent 14px, transparent 18px,
+          ${mid} 18px, ${mid} 22px,
+          ${dark} 22px, ${dark} 28px,
+          transparent 28px, transparent 38px)`;
+        break;
+      case 'historical':
+        // 十字编绳纹理
+        stripes = `repeating-linear-gradient(45deg,
+          ${bright} 0px, ${bright} 7px,
+          ${dark} 7px, ${dark} 12px,
+          transparent 12px, transparent 16px),
         repeating-linear-gradient(-45deg,
-          ${mid} 0px, ${mid} 6px,
-          ${dark} 6px, ${dark} 12px,
-          transparent 12px, transparent 18px)`;
+          ${mid} 0px, ${mid} 5px,
+          ${dark} 5px, ${dark} 10px,
+          transparent 10px, transparent 16px)`;
         break;
       case 'other':
       default:
-        // 圆斑纹理
-        stripes = `radial-gradient(circle at 18% 22%, ${bright} 12px, transparent 13px),
-        radial-gradient(circle at 72% 20%, ${dark} 14px, transparent 15px),
-        radial-gradient(circle at 42% 55%, ${mid} 11px, transparent 12px),
-        radial-gradient(circle at 80% 62%, ${bright} 13px, transparent 14px),
-        radial-gradient(circle at 25% 75%, ${dark} 10px, transparent 11px),
-        radial-gradient(circle at 60% 80%, ${mid} 12px, transparent 13px),
-        radial-gradient(circle at 85% 42%, ${bright} 10px, transparent 11px),
-        radial-gradient(circle at 15% 50%, ${dark} 9px, transparent 10px),
-        radial-gradient(circle at 52% 18%, ${mid} 12px, transparent 13px),
-        radial-gradient(circle at 68% 88%, ${bright} 11px, transparent 12px)`;
+        // 柔和圆斑，像月球表面的"海"
+        stripes = `radial-gradient(circle at 18% 22%, ${bright} 9px, transparent 10px),
+        radial-gradient(circle at 72% 20%, ${dark} 11px, transparent 12px),
+        radial-gradient(circle at 42% 55%, ${mid} 8px, transparent 9px),
+        radial-gradient(circle at 80% 62%, ${bright} 10px, transparent 11px),
+        radial-gradient(circle at 25% 75%, ${dark} 8px, transparent 9px),
+        radial-gradient(circle at 60% 80%, ${mid} 9px, transparent 10px),
+        radial-gradient(circle at 85% 42%, ${bright} 8px, transparent 9px),
+        radial-gradient(circle at 15% 50%, ${dark} 7px, transparent 8px),
+        radial-gradient(circle at 52% 18%, ${mid} 10px, transparent 11px),
+        radial-gradient(circle at 68% 88%, ${bright} 9px, transparent 10px)`;
         break;
     }
 
     return `<div class="planet-texture" style="
   position:absolute;inset:0;border-radius:50%;overflow:hidden;
   background:${stripes};
-  opacity:0.9;
+  opacity:0.48;
 "></div>`;
   }
 
