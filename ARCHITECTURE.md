@@ -4,9 +4,6 @@
 
 OC宇宙是一个原创角色（Original Character）全生命周期管理平台，提供世界观可视化、角色管理、故事创作、AI 聊天、关系图谱等功能。
 
-双模式架构：云端模式（Appwrite BaaS）+ 离线兜底（LocalStorage），未登录用户也可正常使用。
-
-参考需求文档：[REQUIREMENTS.md](./REQUIREMENTS.md)
 
 ## 二、技术栈
 
@@ -211,7 +208,6 @@ oc-universe/
 | settings | 用户设置 | theme, language, userId |
 | profiles | 用户昵称缓存 | name, avatar, userId |
 
-详细建库步骤见 [APPWRITE_SETUP.md](./APPWRITE_SETUP.md)。
 
 ## 七、设计特点
 

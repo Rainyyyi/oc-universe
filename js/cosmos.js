@@ -355,6 +355,102 @@
   /* ========================================================
      世界观行星（不带badge数字）
   ======================================================== */
+  /* ========================================================
+     星球表面纹理生成 —— 每种类型不同的视觉风格
+  ======================================================== */
+  function _buildPlanetSurface(th, sz, type) {
+    const p = th.primary;
+    const s = th.surface;
+    const d1 = darken(p, 18);
+    const d2 = darken(p, 35);
+    const l1 = lighten(p, 25);
+    const l2 = lighten(p, 50);
+
+    let bgStyle = '';
+
+    switch (type) {
+      case 'fantasy':
+        // 魔法旋流：宽窄交替的对角线条纹，仿佛魔力在流动
+        bgStyle = `background:
+          repeating-linear-gradient(142deg,
+            transparent 0, transparent 2px,
+            ${s} 2px, ${s} 4px,
+            transparent 4px, transparent 9px,
+            ${l1} 9px, ${l1} 10px,
+            transparent 10px, transparent 14px,
+            ${d1} 14px, ${d1} 16px,
+            transparent 16px, transparent 26px
+          );`;
+        break;
+
+      case 'scifi':
+        // 科技环带：水平纬度条纹，粗细有致，如气态巨行星
+        bgStyle = `background:
+          repeating-linear-gradient(0deg,
+            transparent 0, transparent 3px,
+            ${s} 3px, ${s} 5px,
+            transparent 5px, transparent 10px,
+            ${d1} 10px, ${d1} 13px,
+            transparent 13px, transparent 18px,
+            ${l1} 18px, ${l1} 19px,
+            transparent 19px, transparent 22px,
+            ${d2} 22px, ${d2} 24px,
+            transparent 24px, transparent 38px
+          );`;
+        break;
+
+      case 'modern':
+        // 生机脉纹：粗宽主条纹 + 细腻暗纹，模拟行星大气层
+        bgStyle = `background:
+          repeating-linear-gradient(0deg,
+            transparent 0, transparent 2px,
+            ${l1} 2px, ${l1} 4px,
+            transparent 4px, transparent 16px,
+            ${s} 16px, ${s} 18px,
+            transparent 18px, transparent 20px,
+            ${d1} 20px, ${d1} 22px,
+            transparent 22px, transparent 34px
+          );`;
+        break;
+
+      case 'historical':
+        // 锦绣暗纹：菱形交错的几何纹理，如织锦光泽
+        bgStyle = `background:
+          repeating-linear-gradient(45deg,
+            transparent 0, transparent 6px,
+            ${s} 6px, ${s} 7px,
+            transparent 7px, transparent 14px
+          ),
+          repeating-linear-gradient(-45deg,
+            transparent 0, transparent 6px,
+            ${d1} 6px, ${d1} 7px,
+            transparent 7px, transparent 14px
+          );`;
+        break;
+
+      case 'other':
+      default:
+        // 星尘斑点：大小不一的圆形斑点随机散布
+        bgStyle = `background:
+          radial-gradient(circle at 18% 28%, ${l2} 2px, transparent 3px),
+          radial-gradient(circle at 62% 22%, ${d1} 3px, transparent 4px),
+          radial-gradient(circle at 38% 52%, ${s} 2px, transparent 3px),
+          radial-gradient(circle at 72% 58%, ${l1} 3px, transparent 4px),
+          radial-gradient(circle at 28% 68%, ${d2} 4px, transparent 5px),
+          radial-gradient(circle at 55% 72%, ${s} 2px, transparent 3px),
+          radial-gradient(circle at 78% 38%, ${d1} 3px, transparent 4px),
+          radial-gradient(circle at 22% 46%, ${l1} 2px, transparent 3px),
+          radial-gradient(circle at 48% 18%, ${l2} 2px, transparent 3px),
+          radial-gradient(circle at 68% 78%, ${s} 3px, transparent 4px),
+          radial-gradient(circle at 32% 82%, ${d1} 2px, transparent 3px),
+          radial-gradient(circle at 82% 14%, ${l1} 2px, transparent 3px);
+          background-color: transparent;`;
+        break;
+    }
+
+    return `<div class="planet-surface planet-surface--${type}" style="${bgStyle}"></div>`;
+  }
+
   class WorldPlanet {
     constructor({ world, x, y, chars, stage, onDetail, orbitEls }) {
       this.world    = world;
@@ -388,7 +484,7 @@
       el.className = `world-planet ${th.cls}`;
       el.style.cssText = `left:${this.cx}px;top:${this.cy}px;`;
 
-      const surfaceAngle = Math.floor(Math.random() * 180);
+      const surfaceHTML = _buildPlanetSurface(th, sz, w.type);
       el.innerHTML = `
         <div class="planet-wrap">
           <div class="planet-glow" style="width:${sz*1.9}px;height:${sz*1.9}px;background:${th.glow};"></div>
@@ -407,13 +503,7 @@
               0 0 20px ${th.glow},
               0 0 50px ${th.glow.replace('0.55','0.2').replace('0.5','0.18')};
           ">
-            <div class="planet-surface" style="
-              background:repeating-linear-gradient(
-                ${surfaceAngle}deg,
-                transparent 0,transparent 5px,
-                ${th.surface} 5px,${th.surface} 6px
-              );
-            "></div>
+            ${surfaceHTML}
           </div>
         </div>
         <div class="planet-label">${escHtml(w.name)}</div>

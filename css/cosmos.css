@@ -239,10 +239,17 @@ body.cosmos-mode .worlds-section > .flex.justify-between {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  animation: planet-rotate 24s linear infinite;
-  opacity: 0.28;
+  opacity: 0.38;
   mix-blend-mode: overlay;
+  pointer-events: none;
 }
+
+/* 不同类型旋转速度不同，营造各自在转的错觉 */
+.planet-surface--fantasy    { animation: planet-rotate 18s linear infinite; }
+.planet-surface--scifi      { animation: planet-rotate 28s linear infinite reverse; }
+.planet-surface--modern     { animation: planet-rotate 22s linear infinite; }
+.planet-surface--historical { animation: planet-rotate 32s linear infinite; }
+.planet-surface--other      { animation: planet-rotate 20s linear infinite reverse; }
 
 @keyframes planet-rotate {
   from { transform: rotate(0deg); }
