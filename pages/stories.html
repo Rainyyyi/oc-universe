@@ -633,7 +633,12 @@
         : '点击展开选择角色...';
     }
 
-    // 查看并编辑故事（打开编辑器模态框）
+    // 打开专业写作编辑器页面
+    function openEditor(storyId) {
+      window.location.href = `story-editor.html?storyId=${encodeURIComponent(storyId)}`;
+    }
+
+    // 查看并编辑故事（打开编辑器模态框 - 备用）
     async function viewStory(storyId) {
       // 先加载故事数据
       let story;
@@ -916,7 +921,7 @@
       for (const s of stories) {
         const statusLabel = s.status === 'completed' ? '已完成' : s.status === 'writing' ? '写作中' : '草稿';
         const statusTag = s.status === 'completed' ? 'success' : s.status === 'writing' ? 'primary' : 'warning';
-        html += `<div class="card story-card" onclick="viewStory('${s.$id || s.id}')">
+        html += `<div class="card story-card" onclick="openEditor('${s.$id || s.id}')">
           <div class="card-body">
             <h3 style="margin-bottom: var(--spacing-xs);">${s.title || '未命名故事'}</h3>
             ${(s.description || s.summary) ? `<p class="text-muted text-sm" style="margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${s.description || s.summary}</p>` : ''}
