@@ -189,11 +189,11 @@
       ctx.translate(x, y);
 
       // 光晕
-      const glowColor = hue ? `hsl(${hue},90%,80%)` : '#fff';
+      const glowHue = hue || 0;
       const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.5);
       cg.addColorStop(0, 'rgba(255,255,255,1)');
-      cg.addColorStop(0.15, glowColor.replace('80%','85%'));
-      cg.addColorStop(0.5, `${glowColor}80`);
+      cg.addColorStop(0.15, `hsl(${glowHue},90%,85%)`);
+      cg.addColorStop(0.5, `hsla(${glowHue},90%,80%,0.5)`);
       cg.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = cg;
       ctx.beginPath();
