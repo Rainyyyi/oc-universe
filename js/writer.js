@@ -1124,16 +1124,6 @@ function renderSettingsTab() {
         <option value="3.0" ${WriterState.lineHeight === 3.0 ? 'selected' : ''}>超宽 3.0x</option>
       </select>
     </div>
-    <div class="setting-field">
-      <label class="setting-label">段落间距</label>
-      <select class="setting-select" id="setParaSpacing" onchange="setParagraphSpacing(this.value)">
-        <option value="0.5" ${WriterState.paragraphSpacing === 0.5 ? 'selected' : ''}>紧凑 (0.5em)</option>
-        <option value="0.75" ${WriterState.paragraphSpacing === 0.75 ? 'selected' : ''}>较紧 (0.75em)</option>
-        <option value="1.0" ${WriterState.paragraphSpacing === 1.0 ? 'selected' : ''}>标准 (1em)</option>
-        <option value="1.5" ${WriterState.paragraphSpacing === 1.5 ? 'selected' : ''}>宽松 (1.5em)</option>
-        <option value="2.0" ${WriterState.paragraphSpacing === 2.0 ? 'selected' : ''}>很宽 (2em)</option>
-      </select>
-    </div>
 
     <!-- 故事设置 -->
     <div class="setting-group-title">故事设置</div>

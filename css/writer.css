@@ -669,6 +669,8 @@ body.writer-page {
   align-items: center;
   justify-content: center;
   gap: 4px;
+  overflow: hidden;
+  position: relative;
 }
 .info-tab:hover {
   color: var(--text-secondary);

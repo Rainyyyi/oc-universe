@@ -189,13 +189,6 @@
             <option value="2.5">2.5x</option>
             <option value="3.0">3.0x</option>
           </select>
-          <select class="toolbar-select format-select" id="toolbarParaSpacing" onchange="setParagraphSpacing(this.value)" title="段落间距">
-            <option value="0.5">紧凑</option>
-            <option value="0.75">较紧</option>
-            <option value="1.0" selected>标准</option>
-            <option value="1.5">宽松</option>
-            <option value="2.0">很宽</option>
-          </select>
         </div>
       </div>
 
@@ -345,12 +338,14 @@
       await OCData.initDataMode();
       await initWriter();
       
-      // Lucide 图标 — 导航栏（已由 initWriter 处理）+ 工具栏/侧栏
+      // Lucide 图标 — 各区域局部初始化（避免全局扫描）
       setTimeout(() => {
         try {
           if (window.lucide) {
             lucide.createIcons({ root: document.getElementById('editorToolbar') });
             lucide.createIcons({ root: document.getElementById('chapterPanel') });
+            lucide.createIcons({ root: document.getElementById('infoPanel') });
+            lucide.createIcons({ root: document.getElementById('infoPanelFloat') });
           }
         } catch(e) {}
       }, 50);
