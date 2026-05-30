@@ -786,6 +786,14 @@
       document.getElementById(id).classList.remove('active');
     }
 
+    // HTML 转义工具函数
+    function escHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
     // 显示分享模态框
     let _shareWorldId = null;
     function showShareModal(worldId, worldName) {

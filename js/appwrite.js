@@ -643,13 +643,11 @@ const AppwriteCharacters = {
     return dbList(COLLECTIONS.CHARACTERS);
   },
   async listByWorld(worldId) {
-    return dbList(COLLECTIONS.CHARACTERS, [
-      Appwrite.Query.equal('worldId', worldId),
-    ]);
+    // 不带 userId 过滤，协作者也能看到其他人创建的角色
+    return dbListByWorldId(COLLECTIONS.CHARACTERS, worldId);
   },
   /**
-   * 按 worldId 查询所有角色（包括协作者创建的，用于统计数量）
-   * 不带 userId 过滤，依赖文档级 read 权限
+   * @deprecated 与 listByWorld 行为一致（保留兼容性）
    */
   async listForWorld(worldId) {
     return dbListByWorldId(COLLECTIONS.CHARACTERS, worldId);
@@ -712,12 +710,11 @@ const AppwriteStories = {
     return dbList(COLLECTIONS.STORIES);
   },
   async listByWorld(worldId) {
-    return dbList(COLLECTIONS.STORIES, [
-      Appwrite.Query.equal('worldId', worldId),
-    ]);
+    // 不带 userId 过滤，协作者也能看到其他人创建的故事
+    return dbListByWorldId(COLLECTIONS.STORIES, worldId);
   },
   /**
-   * 按 worldId 查询所有故事（包括协作者创建的，用于统计数量）
+   * @deprecated 与 listByWorld 行为一致（保留兼容性）
    */
   async listForWorld(worldId) {
     return dbListByWorldId(COLLECTIONS.STORIES, worldId);
@@ -978,24 +975,19 @@ const AppwriteProfiles = {
     const names = new Map();
     if (!userIds || userIds.length === 0) return names;
     if (isPlaceholderConfig()) return names;
-    try {
-      const db = getDatabases();
-      // Appwrite 不支持 SQL IN，逐批查询（每批最多 100 个）
-      const unique = [...new Set(userIds.filter(Boolean))];
-      for (let i = 0; i < unique.length; i += 100) {
-        const batch = unique.slice(i, i + 100);
-        const docs = await Promise.race([
-          db.listDocuments(APPWRITE_CONFIG.databaseId, COLLECTIONS.PROFILES, [
-            Appwrite.Query.equal('$id', batch),
-          ]),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('lookup 超时')), 3000))
+    const db = getDatabases();
+    const unique = [...new Set(userIds.filter(Boolean))];
+    // 逐条 getDocument 查询，比 Query.equal 数组传参兼容性更好
+    for (const uid of unique) {
+      try {
+        const doc = await Promise.race([
+          db.getDocument(APPWRITE_CONFIG.databaseId, COLLECTIONS.PROFILES, uid),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('lookup 超时')), 2000))
         ]);
-        for (const d of (docs?.documents || [])) {
-          names.set(d.$id, d.name || '用户');
-        }
+        names.set(doc.$id, doc.name || '用户');
+      } catch (e) {
+        // profile 不存在或查询失败，跳过
       }
-    } catch (e) {
-      console.debug('profile batchLookup 失败:', e?.message || e);
     }
     return names;
   }
