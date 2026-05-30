@@ -1137,24 +1137,32 @@
         if (avatarInput && avatarInput.files[0] && window.AppwriteAuth) {
           const file = avatarInput.files[0];
           let fileUrl = null;
+          let fileId = null;
           
-          // 尝试通过 API 上传到 Storage
+          // 尝试通过 API 上传到 Storage（publicRead=true，头像需公开可访问）
           try {
             if (window.API && window.API.storage) {
-              const result = await window.API.storage.upload(file);
+              const result = await window.API.storage.upload(file, true);
+              fileId = result.fileId;
               fileUrl = result.url;
-            } else if (typeof uploadAvatar === 'function') {
-              fileUrl = await uploadAvatar(file);
+            } else if (window.AppwriteStorage) {
+              fileId = await window.AppwriteStorage.upload(file, true);
+              fileUrl = window.AppwriteStorage.previewUrl(fileId);
             }
             if (fileUrl && window.AppwriteAuth.updateUserPrefs) {
               const oldPrefs = {};
               const currentUser = await AppwriteAuth.getCurrentUser().catch(() => null);
               if (currentUser && currentUser.prefs) Object.assign(oldPrefs, currentUser.prefs);
               oldPrefs.avatarUrl = fileUrl;
+              if (fileId) oldPrefs.avatarFileId = fileId;
               await AppwriteAuth.updateUserPrefs(oldPrefs);
+              // 立即更新导航栏头像显示
+              const navAvatar = document.getElementById('navAvatarImg');
+              if (navAvatar) { navAvatar.src = fileUrl; navAvatar.style.display = ''; }
             }
           } catch(e) {
             console.warn('头像上传失败，仅更新名称:', e.message);
+            showNotification('名称已保存，头像上传失败：' + e.message, 'warning');
           }
         }
 

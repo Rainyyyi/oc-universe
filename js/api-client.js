@@ -280,8 +280,13 @@ async function createInspiration(data) {
 
 // ==================== 文件上传（替代 base64 存 LocalStorage）====================
 
-async function uploadFile(file) {
-  const fileId = await window.AppwriteStorage.upload(file);
+/**
+ * 通用文件上传
+ * @param {File} file
+ * @param {boolean} [publicRead=false] - 头像/封面等公开展示文件传 true
+ */
+async function uploadFile(file, publicRead = false) {
+  const fileId = await window.AppwriteStorage.upload(file, publicRead);
   const url = window.AppwriteStorage.previewUrl(fileId);
   return { fileId, url };
 }

@@ -476,14 +476,20 @@ async function dbDelete(collectionId, documentId) {
 
 /**
  * 上传文件（File 对象），返回文件 ID（带 15 秒超时）
+ * @param {File} file - 要上传的文件
+ * @param {boolean} [publicRead=false] - 是否允许公开读取（头像等需要公开展示的文件传 true）
  */
-async function storageUpload(file) {
+async function storageUpload(file, publicRead = false) {
   if (isPlaceholderConfig()) throw new Error('Appwrite 未配置');
+  const permissions = publicRead
+    ? [Appwrite.Permission.read(Appwrite.Role.any())]
+    : undefined;
   const res = await Promise.race([
     getStorage().createFile(
       APPWRITE_CONFIG.bucketId,
       Appwrite.ID.unique(),
-      file
+      file,
+      permissions
     ),
     new Promise((_, reject) => setTimeout(() => reject(new Error('文件上传超时')), 15000))
   ]);
@@ -491,15 +497,32 @@ async function storageUpload(file) {
 }
 
 /**
- * 获取文件预览 URL
+ * 获取文件预览 URL（返回字符串）
  */
 function storagePreviewUrl(fileId, width = 400) {
   if (!fileId) return null;
-  return getStorage().getFilePreview(
-    APPWRITE_CONFIG.bucketId,
-    fileId,
-    width
-  ).href;
+  try {
+    const urlObj = getStorage().getFilePreview(
+      APPWRITE_CONFIG.bucketId,
+      fileId,
+      width
+    );
+    // SDK v14+ 返回 URL 对象，v17 也兼容
+    if (urlObj && typeof urlObj === 'object' && urlObj.href) return urlObj.href;
+    if (typeof urlObj === 'string') return urlObj;
+    return String(urlObj);
+  } catch (e) {
+    // 降级：手动拼接 URL
+    return `${APPWRITE_CONFIG.endpoint}/storage/buckets/${APPWRITE_CONFIG.bucketId}/files/${fileId}/preview?width=${width}&project=${APPWRITE_CONFIG.projectId}`;
+  }
+}
+
+/**
+ * 获取文件直接查看 URL（非预览，适用于已公开的文件）
+ */
+function storageFileUrl(fileId) {
+  if (!fileId) return null;
+  return `${APPWRITE_CONFIG.endpoint}/storage/buckets/${APPWRITE_CONFIG.bucketId}/files/${fileId}/view?project=${APPWRITE_CONFIG.projectId}`;
 }
 
 /**
@@ -940,6 +963,7 @@ window.AppwriteDB = {
 window.AppwriteStorage = {
   upload: storageUpload,
   previewUrl: storagePreviewUrl,
+  fileUrl: storageFileUrl,
   delete: storageDelete,
 };
 
