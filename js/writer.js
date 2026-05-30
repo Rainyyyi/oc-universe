@@ -115,6 +115,14 @@ async function loadStory() {
 
   if (!WriterState.story) throw new Error('故事数据为空');
 
+  // 从 localStorage 读取扩展属性（type/targetWords 不在 Appwrite 集合字段中）
+  const SETTINGS_KEY = 'oc_story_settings_' + WriterState.storyId;
+  try {
+    const localSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if (localSettings.type) WriterState.story.type = localSettings.type;
+    if (localSettings.targetWords) WriterState.targetWords = localSettings.targetWords;
+  } catch(e) {}
+
   // 设置目标字数（如果有设定的话）
   if (WriterState.story.targetWords) {
     WriterState.targetWords = WriterState.story.targetWords;
@@ -1060,9 +1068,16 @@ async function saveStorySettings() {
   const targetWords = parseInt(document.getElementById('setTargetWords')?.value) || 0;
   const summary = document.getElementById('setSummary')?.value?.trim() || '';
 
+  // Appwrite Stories 集合只支持: worldId/title/summary/content/status/wordCount/progress/characters/locations/chapters
+  // type 和 targetWords 是编辑器扩展属性，存本地 localStorage
+  const SETTINGS_KEY = 'oc_story_settings_' + (WriterState.storyId || '');
+  const localSettings = { type, targetWords };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(localSettings)); } catch(e) {}
+
   try {
+    // 只传集合中存在的字段
     await OCData.updateStory(WriterState.storyId, {
-      status, type, targetWords, summary
+      status, summary
     });
 
     // 更新本地状态
