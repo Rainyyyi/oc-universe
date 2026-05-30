@@ -174,6 +174,29 @@
             <i data-lucide="Redo2"></i>
           </button>
         </div>
+
+        <!-- 排版控制 -->
+        <div class="toolbar-group" style="border:none;" title="排版设置">
+          <button class="toolbar-btn active" id="toolbarIndentBtn" onclick="toggleIndent()" title="首行缩进">
+            <i data-lucide="IndentIncrease"></i>
+          </button>
+          <select class="toolbar-select format-select" id="toolbarLineHeight" onchange="setLineHeight(this.value)" title="行距">
+            <option value="1.2">1.2x</option>
+            <option value="1.5">1.5x</option>
+            <option value="1.8">1.8x</option>
+            <option value="1.85" selected>1.85x</option>
+            <option value="2.0">2.0x</option>
+            <option value="2.5">2.5x</option>
+            <option value="3.0">3.0x</option>
+          </select>
+          <select class="toolbar-select format-select" id="toolbarParaSpacing" onchange="setParagraphSpacing(this.value)" title="段落间距">
+            <option value="0.5">紧凑</option>
+            <option value="0.75">较紧</option>
+            <option value="1.0" selected>标准</option>
+            <option value="1.5">宽松</option>
+            <option value="2.0">很宽</option>
+          </select>
+        </div>
       </div>
 
       <!-- 编辑器正文区 -->
@@ -322,10 +345,15 @@
       await OCData.initDataMode();
       await initWriter();
       
-      // Lucide 图标（多次确保渲染）
-      [50, 200, 500].forEach(delay => {
-        setTimeout(() => { try { if (window.lucide) lucide.createIcons(); } catch(e) {} }, delay);
-      });
+      // Lucide 图标 — 导航栏（已由 initWriter 处理）+ 工具栏/侧栏
+      setTimeout(() => {
+        try {
+          if (window.lucide) {
+            lucide.createIcons({ root: document.getElementById('editorToolbar') });
+            lucide.createIcons({ root: document.getElementById('chapterPanel') });
+          }
+        } catch(e) {}
+      }, 50);
     });
 
     // 编辑器主题内切换

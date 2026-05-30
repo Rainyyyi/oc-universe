@@ -472,6 +472,14 @@ body.writer-page {
   border-color: var(--primary-color);
 }
 
+/* 控版下拉框（更紧凑） */
+.format-select {
+  font-size: 0.72rem;
+  padding: 0 4px;
+  height: 26px;
+  max-width: 62px;
+}
+
 .toolbar-divider {
   width: 1px;
   height: 20px;
@@ -540,6 +548,7 @@ body.writer-page {
 }
 .editor-content p {
   margin: 0 0 1em;
+  /* text-indent 由排版设置动态控制 */
 }
 .editor-content blockquote {
   margin: 1em 0;
@@ -825,6 +834,51 @@ body.writer-page {
 }
 .setting-row > * {
   flex: 1;
+}
+
+/* 设置分组标题 */
+.setting-group-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 18px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+  letter-spacing: 0.03em;
+}
+.setting-group-title:first-child {
+  margin-top: 0;
+}
+
+/* 开关按钮 */
+.setting-toggle-row {
+  display: flex;
+  gap: 0;
+}
+.setting-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex: 1;
+  justify-content: center;
+}
+.setting-toggle-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+.setting-toggle-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
 /* 角色标签列表 */

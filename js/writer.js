@@ -18,6 +18,10 @@ const WriterState = {
   infoTab: 'stats',       // 右侧面板当前 Tab
   targetWords: 50000,     // 目标字数
   todayWordCount: 0,      // 今日新增字数（localStorage）
+  // 排版设置
+  indentEnabled: true,    // 首行缩进（默认开启，2字符）
+  lineHeight: 1.85,       // 行距
+  paragraphSpacing: 1.0,  // 段落间距（倍数，基准1em）
 };
 
 // ==================== 工具函数 ====================
@@ -91,8 +95,11 @@ async function initWriter() {
     // 加载今日字数
     loadTodayWordCount();
 
-    // Lucide 图标
-    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    // 加载排版设置
+    loadFormatSettings();
+
+    // Lucide 图标 — 局部初始化导航栏（不全局扫描，避免重复渲染）
+    try { if (window.lucide) lucide.createIcons({ root: document.querySelector('.writer-navbar') }); } catch(e) {}
 
     // beforeunload 提示
     window.addEventListener('beforeunload', onBeforeUnload);
@@ -235,7 +242,7 @@ function renderChapterTree() {
         <i data-lucide="Plus" style="width:14px;height:14px;"></i> 创建第一个章节
       </button>
     </div>`;
-    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    try { if (window.lucide) lucide.createIcons({ root: tree }); } catch(e) {}
     return;
   }
 
@@ -357,6 +364,9 @@ function selectChapter(chapterId) {
   updateSaveStatus('saved');
   updateWordCount();
 
+  // 重新应用排版设置（innerHTML 替换后会丢失内联样式）
+  applyFormatting();
+
   // 移动端关闭抽屉
   closeChapterDrawer();
 }
@@ -438,7 +448,7 @@ async function submitChapterForm() {
   closeModal_w();
   showToast(type === 'volume' ? '卷已创建' : '章节已创建', 'success');
 
-  try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+  try { if (window.lucide) lucide.createIcons({ root: document.getElementById('chapterTree') }); } catch(e) {}
 }
 
 function renameChapter(chapterId) {
@@ -487,7 +497,7 @@ function deleteChapterConfirm(chapterId) {
   markDirty();
   autoSave();
   showToast('已删除', 'success');
-  try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+  try { if (window.lucide) lucide.createIcons({ root: document.getElementById('chapterTree') }); } catch(e) {}
 }
 
 function moveChapter(chapterId, direction) {
@@ -520,6 +530,7 @@ function bindEditorEvents() {
     WriterState.isDirty = true;
     updateSaveStatus('unsaved');
     updateWordCount();
+    ensureParagraphFormatting();
 
     clearTimeout(WriterState.saveTimer);
     WriterState.saveTimer = setTimeout(autoSave, 3000); // 3秒防抖
@@ -667,6 +678,96 @@ function bindKeyboardShortcuts() {
       e.preventDefault();
       document.execCommand('underline', false, null);
       return;
+    }
+  });
+}
+
+// ==================== 排版设置 ====================
+const FORMAT_KEY = 'oc_writer_format';
+
+/** 加载排版设置（localStorage） */
+function loadFormatSettings() {
+  try {
+    const data = JSON.parse(localStorage.getItem(FORMAT_KEY) || '{}');
+    if (data.indentEnabled !== undefined) WriterState.indentEnabled = data.indentEnabled;
+    if (data.lineHeight !== undefined) WriterState.lineHeight = data.lineHeight;
+    if (data.paragraphSpacing !== undefined) WriterState.paragraphSpacing = data.paragraphSpacing;
+  } catch(e) {}
+  applyFormatting();
+}
+
+/** 保存排版设置到 localStorage */
+function saveFormatSettings() {
+  try {
+    localStorage.setItem(FORMAT_KEY, JSON.stringify({
+      indentEnabled: WriterState.indentEnabled,
+      lineHeight: WriterState.lineHeight,
+      paragraphSpacing: WriterState.paragraphSpacing
+    }));
+  } catch(e) {}
+}
+
+/** 将排版设置应用到编辑器 */
+function applyFormatting() {
+  const editor = document.getElementById('editor');
+  if (!editor) return;
+
+  // 首行缩进
+  editor.style.textIndent = WriterState.indentEnabled ? '2em' : '0';
+
+  // 行距
+  editor.style.lineHeight = String(WriterState.lineHeight);
+
+  // 段落间距 — 遍历 p 标签设置 margin
+  editor.querySelectorAll('p').forEach(p => {
+    p.style.marginBottom = (WriterState.paragraphSpacing * 1) + 'em';
+  });
+
+  // 更新工具栏按钮状态
+  updateFormatToolbarState();
+}
+
+/** 切换首行缩进 */
+function toggleIndent() {
+  WriterState.indentEnabled = !WriterState.indentEnabled;
+  applyFormatting();
+  saveFormatSettings();
+  showToast(WriterState.indentEnabled ? '已开启首行缩进' : '已关闭首行缩进', 'info');
+}
+
+/** 设置行距 */
+function setLineHeight(value) {
+  WriterState.lineHeight = parseFloat(value);
+  applyFormatting();
+  saveFormatSettings();
+}
+
+/** 设置段落间距 */
+function setParagraphSpacing(value) {
+  WriterState.paragraphSpacing = parseFloat(value);
+  applyFormatting();
+  saveFormatSettings();
+}
+
+/** 更新工具栏中排版按钮的激活状态 */
+function updateFormatToolbarState() {
+  const indentBtn = document.getElementById('toolbarIndentBtn');
+  if (indentBtn) indentBtn.classList.toggle('active', WriterState.indentEnabled);
+
+  const lhSelect = document.getElementById('toolbarLineHeight');
+  if (lhSelect) lhSelect.value = String(WriterState.lineHeight);
+
+  const psSelect = document.getElementById('toolbarParaSpacing');
+  if (psSelect) psSelect.value = String(WriterState.paragraphSpacing);
+}
+
+/** 确保新段落的排版样式正确 */
+function ensureParagraphFormatting() {
+  const editor = document.getElementById('editor');
+  if (!editor) return;
+  editor.querySelectorAll('p').forEach(p => {
+    if (p.style.marginBottom === '') {
+      p.style.marginBottom = (WriterState.paragraphSpacing * 1) + 'em';
     }
   });
 }
@@ -1000,6 +1101,42 @@ function renderSettingsTab() {
   ];
 
   return `
+    <!-- 排版设置 -->
+    <div class="setting-group-title">排版设置</div>
+    <div class="setting-field">
+      <label class="setting-label">首行缩进</label>
+      <div class="setting-toggle-row">
+        <button class="setting-toggle-btn ${WriterState.indentEnabled ? 'active' : ''}" id="setIndentBtn" onclick="toggleIndent()">
+          <i data-lucide="${WriterState.indentEnabled ? 'Check' : 'X'}" style="width:14px;height:14px;"></i>
+          ${WriterState.indentEnabled ? '已开启 (2字符)' : '已关闭'}
+        </button>
+      </div>
+    </div>
+    <div class="setting-field">
+      <label class="setting-label">行距</label>
+      <select class="setting-select" id="setLineHeight" onchange="setLineHeight(this.value)">
+        <option value="1.2" ${WriterState.lineHeight === 1.2 ? 'selected' : ''}>紧凑 1.2x</option>
+        <option value="1.5" ${WriterState.lineHeight === 1.5 ? 'selected' : ''}>较紧 1.5x</option>
+        <option value="1.8" ${WriterState.lineHeight === 1.8 ? 'selected' : ''}>舒适 1.8x</option>
+        <option value="1.85" ${WriterState.lineHeight === 1.85 ? 'selected' : ''}>标准 1.85x</option>
+        <option value="2.0" ${WriterState.lineHeight === 2.0 ? 'selected' : ''}>宽松 2.0x</option>
+        <option value="2.5" ${WriterState.lineHeight === 2.5 ? 'selected' : ''}>很宽 2.5x</option>
+        <option value="3.0" ${WriterState.lineHeight === 3.0 ? 'selected' : ''}>超宽 3.0x</option>
+      </select>
+    </div>
+    <div class="setting-field">
+      <label class="setting-label">段落间距</label>
+      <select class="setting-select" id="setParaSpacing" onchange="setParagraphSpacing(this.value)">
+        <option value="0.5" ${WriterState.paragraphSpacing === 0.5 ? 'selected' : ''}>紧凑 (0.5em)</option>
+        <option value="0.75" ${WriterState.paragraphSpacing === 0.75 ? 'selected' : ''}>较紧 (0.75em)</option>
+        <option value="1.0" ${WriterState.paragraphSpacing === 1.0 ? 'selected' : ''}>标准 (1em)</option>
+        <option value="1.5" ${WriterState.paragraphSpacing === 1.5 ? 'selected' : ''}>宽松 (1.5em)</option>
+        <option value="2.0" ${WriterState.paragraphSpacing === 2.0 ? 'selected' : ''}>很宽 (2em)</option>
+      </select>
+    </div>
+
+    <!-- 故事设置 -->
+    <div class="setting-group-title">故事设置</div>
     <div class="setting-field">
       <label class="setting-label">故事状态</label>
       <select class="setting-select" id="setStatus">
