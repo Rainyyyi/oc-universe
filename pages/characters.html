@@ -67,7 +67,7 @@
       </div>
     </div>
     <nav class="sidebar-nav">
-      <a href="characters.html" class="sidebar-nav-item active" onclick="filterCharacters('')">
+      <a href="characters.html" class="sidebar-nav-item active" onclick="filterByWorld('');return false;">
         <span class="icon"><i data-lucide="Users"></i></span>
         <span>全部角色</span>
       </a>
@@ -442,6 +442,7 @@
       await OCData.initDataMode();
       loadCustomCategories();
       renderCategoryPills();
+      await loadWorldFilters();  // 加载侧边栏世界观筛选列表
       await loadCharacters();
 
       // 头像预览 + 保存原始文件引用（用于上传Storage）
@@ -489,6 +490,64 @@
     function showCreateCategoryModal() {
       document.getElementById('createCategoryModal').classList.add('active');
     }
+
+    // 加载侧边栏世界观筛选列表
+    async function loadWorldFilters() {
+      const container = document.getElementById('worldFilterList');
+      const filterSelect = document.getElementById('filterWorld');
+      try {
+        const worlds = await OCData.getWorlds();
+        if (worlds && worlds.length > 0) {
+          // 侧边栏列表
+          if (container) {
+            container.innerHTML = worlds.map(w => {
+              const id = w.$id || w.id;
+              const name = w.name || '未命名世界';
+              return `<a href="#" class="sidebar-nav-item" onclick="filterByWorld('${id}')" data-world-id="${id}">
+                <span class="icon"><i data-lucide="Globe"></i></span>
+                <span>${name}</span>
+              </a>`;
+            }).join('');
+          }
+          // 主内容区下拉框
+          if (filterSelect) {
+            let html = '<option value="">全部世界观</option>';
+            worlds.forEach(w => {
+              html += `<option value="${w.$id || w.id}">${w.name || '未命名世界'}</option>`;
+            });
+            filterSelect.innerHTML = html;
+            // 绑定 change 事件（只绑定一次）
+            filterSelect.onchange = function() {
+              var val = filterSelect.value;
+              filterByWorld(val);
+              // 同步侧边栏高亮
+              document.querySelectorAll('#worldFilterList .sidebar-nav-item').forEach(function(item) {
+                item.classList.toggle('active', item.getAttribute('data-world-id') === val);
+              });
+            };
+          }
+          if (window.lucide) lucide.createIcons();
+        } else {
+          if (container) container.innerHTML = '<div class="empty-state" style="padding: var(--spacing-md); text-align: center; color: var(--text-muted); font-size: 0.875rem;"><p>暂无世界观</p></div>';
+        }
+      } catch (err) {
+        console.error('加载世界观筛选失败:', err);
+        if (container) container.innerHTML = '<div class="empty-state" style="padding: var(--spacing-md); text-align: center; color: var(--text-muted); font-size: 0.875rem;"><p>加载失败</p></div>';
+      }
+    }
+
+    // 按世界观筛选角色（云端模式：传 worldId 给 loadCharacters）
+    function filterByWorld(worldId) {
+      _currentWorldFilter = worldId;
+      // 更新侧边栏高亮
+      var items = document.querySelectorAll('#worldFilterList .sidebar-nav-item');
+      items.forEach(function(item) {
+        item.classList.toggle('active', item.getAttribute('data-world-id') === worldId);
+      });
+      // 重新加载角色列表（带世界观过滤）
+      loadCharacters(worldId);
+    }
+    var _currentWorldFilter = null;
     
     // 创建分类
     function createCategory() {
