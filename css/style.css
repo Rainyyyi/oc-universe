@@ -1,4 +1,4 @@
-/* 🌌 OC宇宙 - 全局样式 · 深蓝宇宙 */
+/* 🌌 OC宇宙 - 全局样式 · 浅蓝紫梦幻银河 */
 
 /* Lucide 图标基础样式 */
 [data-lucide] {
@@ -15,57 +15,57 @@
 
 /* CSS变量定义 */
 /* =========================================
-   晨曦模式 · 纯净白底 + 蓝色主题
+   浅蓝紫梦幻银河 · 全局统一配色
    ========================================= */
 :root {
-  /* 主色 — 纯净蓝 */
-  --primary-color: #3B82F6;
-  --primary-hover: #2563EB;
-  --primary-light: #EFF6FF;
-  --primary-lighter: #DBEAFE;
-  --secondary-color: #1D4ED8;
+  /* 背景 — 银河浅色分层 */
+  --bg-primary: #e8edf6;
+  --bg-secondary: rgba(215, 228, 248, 0.55);
+  --bg-tertiary: rgba(205, 220, 244, 0.6);
+  --bg-card: rgba(225, 235, 250, 0.6);
+  --bg-sidebar: rgba(210, 225, 248, 0.45);
 
-  /* 强调色 — 天蓝点缀 */
-  --accent-color: #38BDF8;
-  --accent-hover: #0EA5E9;
-  --accent-light: #E0F2FE;
+  /* 文字 — 深蓝灰 */
+  --text-primary: #1a2840;
+  --text-secondary: #3a4860;
+  --text-muted: #6a7a90;
+  --text-inverse: #f0f4ff;
 
-  /* 背景 — 纯净白分层 */
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #FAFBFC;
-  --bg-tertiary: #F1F5F9;
-  --bg-card: #FFFFFF;
-  --bg-sidebar: #F8FAFC;
+  /* 主色 — 柔蓝 */
+  --primary-color: #4a80d8;
+  --primary-hover: #3a68c0;
+  --primary-light: rgba(100, 150, 210, 0.12);
+  --primary-lighter: rgba(100, 150, 210, 0.2);
+  --secondary-color: #2a5090;
 
-  /* 文字 — 中性灰（无色偏） */
-  --text-primary: #111827;
-  --text-secondary: #4B5563;
-  --text-muted: #9CA3AF;
-  --text-inverse: #FFFFFF;
+  /* 强调色 — 薰衣草紫 */
+  --accent-color: #6878d0;
+  --accent-hover: #5858c0;
+  --accent-light: rgba(120, 130, 210, 0.12);
 
-  /* 边框 — 浅灰 */
-  --border-color: #E5E7EB;
-  --border-light: #F3F4F6;
+  /* 边框 — 柔蓝透明 */
+  --border-color: rgba(180, 195, 225, 0.4);
+  --border-light: rgba(180, 195, 225, 0.25);
 
-  /* 状态色 */
+  /* 状态色（保持可读性） */
   --success-color: #10B981;
-  --success-bg: #ECFDF5;
+  --success-bg: rgba(16, 185, 129, 0.08);
   --success-text: #065F46;
   --warning-color: #F59E0B;
-  --warning-bg: #FFFBEB;
+  --warning-bg: rgba(245, 158, 11, 0.08);
   --warning-text: #92400E;
   --error-color: #EF4444;
-  --error-bg: #FEF2F2;
+  --error-bg: rgba(239, 68, 68, 0.08);
   --error-text: #991B1B;
-  --info-color: #3B82F6;
-  --info-bg: #EFF6FF;
+  --info-color: #4a80d8;
+  --info-bg: rgba(74, 128, 216, 0.08);
   --info-text: #1E40AF;
 
-  /* 阴影 — 轻柔灰（不抢日出底透） */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
-  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
-  --shadow-lg: 0 10px 24px -4px rgb(0 0 0 / 0.08), 0 4px 8px -4px rgb(0 0 0 / 0.05);
-  --shadow-xl: 0 20px 40px -8px rgb(0 0 0 / 0.10), 0 8px 16px -6px rgb(0 0 0 / 0.06);
+  /* 阴影 — 柔蓝调 */
+  --shadow-sm: 0 1px 3px 0 rgba(60, 90, 140, 0.06);
+  --shadow-md: 0 4px 14px -2px rgba(40, 70, 120, 0.08), 0 2px 6px -2px rgba(40, 70, 120, 0.05);
+  --shadow-lg: 0 10px 28px -4px rgba(30, 60, 110, 0.1), 0 4px 10px -4px rgba(30, 60, 110, 0.06);
+  --shadow-xl: 0 20px 48px -8px rgba(20, 50, 100, 0.12), 0 8px 18px -6px rgba(20, 50, 100, 0.08);
   
   /* 圆角 */
   --radius-sm: 0.25rem;
@@ -106,57 +106,50 @@
 }
 
 /* =========================================
-   星夜模式 · 深空蓝底 + 宇宙星云调
+   深色模式 · 同步适配为浅蓝紫银河
    ========================================= */
 [data-theme="dark"] {
-  /* 主色 — 深空蓝（暗底上更亮） */
-  --primary-color: #60A5FA;
-  --primary-hover: #93C5FD;
-  --primary-light: #1E3A8A;
-  --primary-lighter: #1E40AF;
-  --secondary-color: #3B82F6;
+  --primary-color: #4a80d8;
+  --primary-hover: #3a68c0;
+  --primary-light: rgba(100, 150, 210, 0.12);
+  --primary-lighter: rgba(100, 150, 210, 0.2);
+  --secondary-color: #2a5090;
 
-  /* 强调色 — 星云紫蓝点缀 */
-  --accent-color: #818CF8;
-  --accent-hover: #A5B4FC;
-  --accent-light: rgba(129, 140, 248, 0.15);
+  --accent-color: #6878d0;
+  --accent-hover: #5858c0;
+  --accent-light: rgba(120, 130, 210, 0.12);
 
-  /* 背景 — 深空蓝分层 */
-  --bg-primary: #070B14;
-  --bg-secondary: #0D1424;
-  --bg-tertiary: #111827;
-  --bg-card: #0D1424;
-  --bg-sidebar: #090E1A;
+  --bg-primary: #e8edf6;
+  --bg-secondary: rgba(215, 228, 248, 0.55);
+  --bg-tertiary: rgba(205, 220, 244, 0.6);
+  --bg-card: rgba(225, 235, 250, 0.6);
+  --bg-sidebar: rgba(210, 225, 248, 0.45);
 
-  /* 文字 — 柔和浅蓝灰 */
-  --text-primary: #E2E8F0;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-inverse: #FFFFFF;
+  --text-primary: #1a2840;
+  --text-secondary: #3a4860;
+  --text-muted: #6a7a90;
+  --text-inverse: #f0f4ff;
 
-  /* 边框 — 星尘灰 */
-  --border-color: #1E2D4A;
-  --border-light: #243354;
+  --border-color: rgba(180, 195, 225, 0.4);
+  --border-light: rgba(180, 195, 225, 0.25);
 
-  /* 状态色 */
-  --success-color: #34D399;
-  --success-bg: rgba(52, 211, 153, 0.12);
-  --success-text: #6EE7B7;
-  --warning-color: #FBBF24;
-  --warning-bg: rgba(251, 191, 36, 0.12);
-  --warning-text: #FCD34D;
-  --error-color: #F87171;
-  --error-bg: rgba(248, 113, 113, 0.12);
-  --error-text: #FCA5A5;
-  --info-color: #60A5FA;
-  --info-bg: rgba(96, 165, 250, 0.12);
-  --info-text: #93C5FD;
+  --success-color: #10B981;
+  --success-bg: rgba(16, 185, 129, 0.08);
+  --success-text: #065F46;
+  --warning-color: #F59E0B;
+  --warning-bg: rgba(245, 158, 11, 0.08);
+  --warning-text: #92400E;
+  --error-color: #EF4444;
+  --error-bg: rgba(239, 68, 68, 0.08);
+  --error-text: #991B1B;
+  --info-color: #4a80d8;
+  --info-bg: rgba(74, 128, 216, 0.08);
+  --info-text: #1E40AF;
 
-  /* 阴影 — 深空黑（带蓝微光） */
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5);
-  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.6), 0 2px 6px -2px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 10px 24px -4px rgb(0 0 0 / 0.7), 0 4px 8px -4px rgb(0 0 0 / 0.5);
-  --shadow-xl: 0 20px 40px -8px rgb(0 0 0 / 0.8), 0 8px 16px -6px rgb(0 0 0 / 0.6);
+  --shadow-sm: 0 1px 3px 0 rgba(60, 90, 140, 0.06);
+  --shadow-md: 0 4px 14px -2px rgba(40, 70, 120, 0.08), 0 2px 6px -2px rgba(40, 70, 120, 0.05);
+  --shadow-lg: 0 10px 28px -4px rgba(30, 60, 110, 0.1), 0 4px 10px -4px rgba(30, 60, 110, 0.06);
+  --shadow-xl: 0 20px 48px -8px rgba(20, 50, 100, 0.12), 0 8px 18px -6px rgba(20, 50, 100, 0.08);
 }
 
 /* 基础重置 */
@@ -176,37 +169,31 @@ body {
   font-size: var(--text-base);
   line-height: 1.6;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
-  /* 亮色模式 — 柔和暖调宇宙感：极淡蓝紫光晕 + 细腻噪点 */
-  background-image:
-    /* 右上角淡紫蓝光晕 */
-    radial-gradient(ellipse 100% 70% at 100% 0%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
-    /* 左下角暖橙微光 */
-    radial-gradient(ellipse 80% 60% at 0% 100%, rgba(251, 146, 60, 0.04) 0%, transparent 50%),
-    /* 底部中心淡蓝 */
-    radial-gradient(ellipse 60% 40% at 50% 110%, rgba(59, 130, 246, 0.035) 0%, transparent 55%);
-  background-size: 100% 100%;
-  background-attachment: fixed;
-  background-position: 0 0;
-  background-repeat: repeat;
+  background: linear-gradient(
+    175deg,
+    #a0c0e8 0%,
+    #b4c8e8 18%,
+    #c4c4e8 40%,
+    #d0c4e4 58%,
+    #dcc8dc 72%,
+    #e4ccd0 85%,
+    #e8d4c4 100%
+  ) fixed;
   min-height: 100vh;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition: color var(--transition-normal);
 }
 
 [data-theme="dark"] body {
-  /* 深色宇宙背景：更明显的蓝色光芒 + 更密星点 + 噪点 */
-  background-image:
-    /* 右上角深蓝光芒 */
-    radial-gradient(ellipse 90% 60% at 88% 5%, rgba(59, 130, 246, 0.18) 0%, transparent 55%),
-    /* 左下角天蓝光 */
-    radial-gradient(ellipse 70% 45% at 12% 95%, rgba(56, 189, 248, 0.12) 0%, transparent 50%),
-    /* 中心微光 */
-    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(37, 99, 235, 0.06) 0%, transparent 70%),
-    /* 星点 SVG */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Ccircle cx='20' cy='40' r='1' fill='%2360a5fa' opacity='0.6'/%3E%3Ccircle cx='75' cy='15' r='0.7' fill='%2393c5fd' opacity='0.5'/%3E%3Ccircle cx='140' cy='85' r='0.9' fill='%2338bdf8' opacity='0.55'/%3E%3Ccircle cx='200' cy='30' r='0.6' fill='%2360a5fa' opacity='0.5'/%3E%3Ccircle cx='260' cy='70' r='0.8' fill='%23bfdbfe' opacity='0.6'/%3E%3Ccircle cx='35' cy='140' r='0.7' fill='%2393c5fd' opacity='0.5'/%3E%3Ccircle cx='95' cy='180' r='1' fill='%2360a5fa' opacity='0.55'/%3E%3Ccircle cx='170' cy='130' r='0.6' fill='%2338bdf8' opacity='0.5'/%3E%3Ccircle cx='235' cy='160' r='0.8' fill='%2393c5fd' opacity='0.6'/%3E%3Ccircle cx='280' cy='200' r='0.7' fill='%2360a5fa' opacity='0.5'/%3E%3Ccircle cx='15' cy='240' r='0.9' fill='%23bfdbfe' opacity='0.55'/%3E%3Ccircle cx='110' cy='260' r='0.6' fill='%2393c5fd' opacity='0.5'/%3E%3Ccircle cx='190' cy='220' r='0.8' fill='%2338bdf8' opacity='0.6'/%3E%3Ccircle cx='255' cy='280' r='0.7' fill='%2360a5fa' opacity='0.5'/%3E%3C/svg%3E"),
-    /* 噪点纹理 */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  background-attachment: fixed;
+  background: linear-gradient(
+    175deg,
+    #a0c0e8 0%,
+    #b4c8e8 18%,
+    #c4c4e8 40%,
+    #d0c4e4 58%,
+    #dcc8dc 72%,
+    #e4ccd0 85%,
+    #e8d4c4 100%
+  ) fixed;
 }
 
 /* 链接样式 */
@@ -584,20 +571,9 @@ th {
   color: var(--border-color);
   flex-shrink: 0;
   align-self: center;
-  padding-top: 40px; /* 对齐卡片中部 */
+  padding-top: 40px;
 }
 .guide-step-arrow [data-lucide] {
   width: 20px;
   height: 20px;
-}
-
-/* 暗色模式适配 */
-[data-theme="dark"] .guide-step {
-  background: rgba(30, 41, 59, 0.6);
-}
-[data-theme="dark"] .guide-step-icon {
-  background: rgba(37, 99, 235, 0.15);
-}
-[data-theme="dark"] .empty-guide-icon {
-  background: rgba(37, 99, 235, 0.15);
 }

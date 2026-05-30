@@ -33,14 +33,14 @@
 }
 
 html[data-theme="dark"] {
-  --editor-bg: #0D1424;
-  --editor-text: #E2E8F0;
-  --toolbar-bg: #0D1424;
-  --toolbar-border: #1E2D4A;
-  --statusbar-bg: #090E1A;
-  --chapter-active-bg: #172554;
-  --chapter-hover-bg: #111827;
-  --focus-bg: #0D1117;
+  --editor-bg: rgba(220, 230, 248, 0.55);
+  --editor-text: #1a2840;
+  --toolbar-bg: rgba(210, 225, 248, 0.5);
+  --toolbar-border: rgba(180, 195, 225, 0.35);
+  --statusbar-bg: rgba(210, 225, 248, 0.45);
+  --chapter-active-bg: rgba(100, 150, 210, 0.18);
+  --chapter-hover-bg: rgba(100, 150, 210, 0.1);
+  --focus-bg: rgba(215, 228, 248, 0.6);
 }
 
 /* === 基础重置 === */

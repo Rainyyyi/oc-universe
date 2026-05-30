@@ -6,7 +6,7 @@
   <title>OC宇宙 - 原创角色管理平台</title>
   <!-- 宇宙主题：浅色银河，防止加载闪白 -->
   <script>
-    document.documentElement.setAttribute('data-theme', 'dark');
+    try { var t = localStorage.getItem('oc_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); } catch(e) {}
   </script>
   <style>
     html, body {
@@ -500,10 +500,8 @@
   <script>
     // 页面初始化
     document.addEventListener('DOMContentLoaded', async function() {
-      // 激活宇宙模式（固定深色主题）
+      // 激活宇宙模式
       document.body.classList.add('cosmos-mode');
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('oc_theme', 'dark');
       // 初始化 Lucide 图标
       if (window.lucide) lucide.createIcons();
 
