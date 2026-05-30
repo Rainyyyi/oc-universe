@@ -356,69 +356,81 @@
      世界观行星（不带badge数字）
   ======================================================== */
   /* ========================================================
-     星球纹理 —— 返回 background-image 字符串，直接叠在 core 上
+     星球纹理 —— 返回一个独立子 div 的 HTML 字符串
+     此 div 放在 planet-core 内部，position:absolute 铺满整个圆形
+     不再依赖 background 层叠，避免被伪元素/渲染引擎吞掉
   ======================================================== */
-  function _buildPlanetTexture(th, type) {
+  function _buildPlanetTextureDiv(th, type) {
     const p = th.primary;
-    const white = 'rgba(255,255,255,0.72)';
-    const black = 'rgba(0,0,0,0.42)';
-    const tint  = lighten(p, 58);
-    const shade = darken(p, 62);
+    // 用极高对比度的颜色：亮色 > 底色很多，暗色 < 底色很多
+    const bright = lighten(p, 70);   // 亮条
+    const dark   = darken(p, 75);    // 暗条
+    const mid    = lighten(p, 30);   // 中亮
 
+    let stripes;
     switch (type) {
       case 'fantasy':
-        return `repeating-linear-gradient(142deg,
-          ${white} 0px, ${white} 7px,
-          ${shade} 7px, ${shade} 14px,
-          ${tint} 14px, ${tint} 18px,
-          ${black} 18px, ${black} 22px,
-          transparent 22px, transparent 26px,
-          ${white} 26px, ${white} 30px,
-          transparent 30px, transparent 40px)`;
+        // 粗斜条纹：亮/暗交替 + 透明留白
+        stripes = `repeating-linear-gradient(135deg,
+          ${bright} 0px, ${bright} 12px,
+          ${dark} 12px, ${dark} 24px,
+          transparent 24px, transparent 28px,
+          ${mid} 28px, ${mid} 34px,
+          ${dark} 34px, ${dark} 40px,
+          transparent 40px, transparent 48px)`;
+        break;
       case 'scifi':
-        return `repeating-linear-gradient(0deg,
-          ${white} 0px, ${white} 5px,
-          ${shade} 5px, ${shade} 12px,
-          transparent 12px, transparent 14px,
-          ${tint} 14px, ${tint} 18px,
-          ${black} 18px, ${black} 26px,
-          transparent 26px, transparent 30px,
-          ${white} 30px, ${white} 34px,
-          transparent 34px, transparent 44px)`;
+        // 水平粗细条纹
+        stripes = `repeating-linear-gradient(0deg,
+          ${bright} 0px, ${bright} 10px,
+          ${dark} 10px, ${dark} 18px,
+          transparent 18px, transparent 22px,
+          ${mid} 22px, ${mid} 28px,
+          ${dark} 28px, ${dark} 36px,
+          transparent 36px, transparent 44px)`;
+        break;
       case 'modern':
-        return `repeating-linear-gradient(0deg,
-          ${tint} 0px, ${tint} 7px,
-          ${black} 7px, ${black} 11px,
-          transparent 11px, transparent 15px,
-          ${white} 15px, ${white} 19px,
-          ${shade} 19px, ${shade} 23px,
-          transparent 23px, transparent 30px,
-          ${tint} 30px, ${tint} 36px,
-          transparent 36px, transparent 46px)`;
+        // 垂直条纹
+        stripes = `repeating-linear-gradient(90deg,
+          ${bright} 0px, ${bright} 8px,
+          ${dark} 8px, ${dark} 16px,
+          transparent 16px, transparent 20px,
+          ${mid} 20px, ${mid} 26px,
+          ${dark} 26px, ${dark} 32px,
+          transparent 32px, transparent 42px)`;
+        break;
       case 'historical':
-        return `repeating-linear-gradient(45deg,
-          ${white} 0px, ${white} 6px,
-          ${shade} 6px, ${shade} 12px,
-          transparent 12px, transparent 16px),
+        // 十字交叉网格纹
+        stripes = `repeating-linear-gradient(45deg,
+          ${bright} 0px, ${bright} 8px,
+          ${dark} 8px, ${dark} 14px,
+          transparent 14px, transparent 18px),
         repeating-linear-gradient(-45deg,
-          ${tint} 0px, ${tint} 5px,
-          ${black} 5px, ${black} 11px,
-          transparent 11px, transparent 16px)`;
+          ${mid} 0px, ${mid} 6px,
+          ${dark} 6px, ${dark} 12px,
+          transparent 12px, transparent 18px)`;
+        break;
       case 'other':
       default:
-        return `radial-gradient(circle at 15% 25%, ${white} 7px, transparent 8px),
-        radial-gradient(circle at 65% 18%, ${shade} 10px, transparent 11px),
-        radial-gradient(circle at 35% 55%, ${tint} 8px, transparent 9px),
-        radial-gradient(circle at 75% 60%, ${black} 9px, transparent 10px),
-        radial-gradient(circle at 22% 72%, ${white} 6px, transparent 7px),
-        radial-gradient(circle at 58% 78%, ${shade} 8px, transparent 9px),
-        radial-gradient(circle at 80% 38%, ${tint} 7px, transparent 8px),
-        radial-gradient(circle at 18% 48%, ${black} 6px, transparent 7px),
-        radial-gradient(circle at 50% 15%, ${white} 7px, transparent 8px),
-        radial-gradient(circle at 70% 82%, ${shade} 9px, transparent 10px),
-        radial-gradient(circle at 28% 85%, ${tint} 6px, transparent 7px),
-        radial-gradient(circle at 85% 12%, ${white} 7px, transparent 8px)`;
+        // 圆斑纹理
+        stripes = `radial-gradient(circle at 18% 22%, ${bright} 12px, transparent 13px),
+        radial-gradient(circle at 72% 20%, ${dark} 14px, transparent 15px),
+        radial-gradient(circle at 42% 55%, ${mid} 11px, transparent 12px),
+        radial-gradient(circle at 80% 62%, ${bright} 13px, transparent 14px),
+        radial-gradient(circle at 25% 75%, ${dark} 10px, transparent 11px),
+        radial-gradient(circle at 60% 80%, ${mid} 12px, transparent 13px),
+        radial-gradient(circle at 85% 42%, ${bright} 10px, transparent 11px),
+        radial-gradient(circle at 15% 50%, ${dark} 9px, transparent 10px),
+        radial-gradient(circle at 52% 18%, ${mid} 12px, transparent 13px),
+        radial-gradient(circle at 68% 88%, ${bright} 11px, transparent 12px)`;
+        break;
     }
+
+    return `<div class="planet-texture" style="
+  position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  background:${stripes};
+  opacity:0.9;
+"></div>`;
   }
 
   // 各世界观类型 → 旋转速度/方向
@@ -463,22 +475,20 @@
       el.className = `world-planet ${th.cls}`;
       el.style.cssText = `left:${this.cx}px;top:${this.cy}px;`;
 
-      const texBG  = _buildPlanetTexture(th, w.type);
       const rotAnim = PLANET_ROTATE[w.type] || PLANET_ROTATE.other;
-      // 纹理叠在星球底色上面：逗号分隔，第一个在顶层
-      const bg = `${texBG},
-            radial-gradient(circle at 35% 32%,
-              ${lighten(th.primary, 40)} 0%,
-              ${th.primary} 42%,
-              ${darken(th.primary, 22)} 80%,
-              ${darken(th.primary, 42)} 100%
-            )`;
+      // 底色只保留径向渐变
+      const baseBG = `radial-gradient(circle at 35% 32%,
+            ${lighten(th.primary, 40)} 0%,
+            ${th.primary} 42%,
+            ${darken(th.primary, 22)} 80%,
+            ${darken(th.primary, 42)} 100%
+          )`;
       el.innerHTML = `
         <div class="planet-wrap" style="${rotAnim};">
           <div class="planet-glow" style="width:${sz*1.9}px;height:${sz*1.9}px;background:${th.glow};"></div>
           <div class="planet-core" style="
             width:${sz}px;height:${sz}px;
-            background:${bg};
+            background:${baseBG};
             --planet-glow:${th.glow};
             box-shadow:
               inset -5px -5px 14px rgba(0,0,0,0.35),
@@ -486,6 +496,7 @@
               0 0 20px ${th.glow},
               0 0 50px ${th.glow.replace('0.55','0.2').replace('0.5','0.18')};
           ">
+            ${_buildPlanetTextureDiv(th, w.type)}
           </div>
         </div>
         <div class="planet-label">${escHtml(w.name)}</div>
