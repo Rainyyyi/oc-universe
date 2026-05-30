@@ -1,7 +1,8 @@
 /**
- * 🌌 OC宇宙 - 宇宙星图引擎 v2
+ * 🌌 OC宇宙 - 宇宙星图引擎 v3
  * 世界观 = 发光行星  |  OC = 围绕轨道的星星
- * 支持：拖拽平移、滚轮缩放、悬停交互
+ * 配色：浅蓝紫梦幻银河
+ * 支持：拖拽平移、滚轮缩放、随机散落布局、悬停交互
  */
 
 ;(function(window) {
@@ -11,28 +12,30 @@
      配置
   ======================================================== */
   const CFG = {
-    planetSizes:    { sm: 50, md: 66, lg: 84 },   // px
-    orbitRadii:     [88, 118, 148],                // 轨道半径 px
-    orbitPerRing:   [4, 6, 8],                     // 每圈最多几颗星
+    planetSizes:    { sm: 50, md: 66, lg: 84 },
+    orbitRadii:     [88, 118, 148],
+    orbitPerRing:   [4, 6, 8],
     starSizes:      [5, 7, 9],
-    starSpeedBase:  0.00028,                        // 公转角速度
-    bgStarCount:    280,
+    starSpeedBase:  0.00028,
+    bgStarCount:    420,            // 大幅增加星点
+    bigStarCount:   12,             // 更多大亮星
     minScale:       0.4,
     maxScale:       2.5,
   };
 
   // 世界观类型 → 行星颜色
   const TYPE_THEMES = {
-    fantasy:    { primary:'#c060ff', glow:'rgba(180,80,255,0.6)',  surface:'rgba(180,80,255,0.35)',  cls:'planet-fantasy'    },
-    scifi:      { primary:'#3a9eff', glow:'rgba(50,140,255,0.6)',  surface:'rgba(50,140,255,0.35)',  cls:'planet-scifi'      },
-    modern:     { primary:'#20d090', glow:'rgba(30,200,140,0.55)', surface:'rgba(30,200,140,0.3)',   cls:'planet-modern'     },
-    historical: { primary:'#f0a040', glow:'rgba(240,160,60,0.6)',  surface:'rgba(240,160,60,0.35)',  cls:'planet-historical' },
-    other:      { primary:'#ff70c0', glow:'rgba(255,100,180,0.55)',surface:'rgba(255,100,180,0.3)',  cls:'planet-other'      },
+    fantasy:    { primary:'#7a38d8', glow:'rgba(130,80,220,0.55)',  surface:'rgba(130,80,220,0.3)',   cls:'planet-fantasy'    },
+    scifi:      { primary:'#3878e8', glow:'rgba(60,130,240,0.5)',   surface:'rgba(60,130,240,0.3)',   cls:'planet-scifi'      },
+    modern:     { primary:'#18b878', glow:'rgba(24,180,120,0.5)',   surface:'rgba(24,180,120,0.25)',  cls:'planet-modern'     },
+    historical: { primary:'#e08830', glow:'rgba(220,130,40,0.55)',  surface:'rgba(220,130,40,0.3)',   cls:'planet-historical' },
+    other:      { primary:'#e850a0', glow:'rgba(230,80,150,0.5)',   surface:'rgba(230,80,150,0.25)',  cls:'planet-other'      },
   };
 
   const STAR_COLORS = [
-    '#b8d8ff','#d0c8ff','#ffe0a0','#a0ffcc','#ffc0e0',
-    '#80d8ff','#e0b0ff','#fff0a0','#c0f0d8','#ffb0d0',
+    '#fff','#fff','#ffe8c0','#d0e0ff','#ffd0e8',
+    '#fff','#ffe0a0','#c0d8ff','#e8d0ff','#ffd8e0',
+    '#fff','#ffd8b0','#b8d8ff',
   ];
 
   /* ========================================================
@@ -64,27 +67,63 @@
     return `rgb(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)})`;
   }
 
-  // 把世界观均匀分布到舞台
+  /* ========================================================
+     行星随机散落布局
+     不再是完美的环形排列，加入随机偏移和半径变化
+  ======================================================== */
   function layoutPlanets(n, stageW, stageH) {
     if (n === 0) return [];
-    if (n === 1) return [{ x: stageW/2, y: stageH/2 }];
+    if (n === 1) return [{ x: stageW/2 + rand(-30, 30), y: stageH/2 + rand(-20, 20) }];
+
     const positions = [];
     const cx = stageW / 2, cy = stageH / 2;
     const maxR = Math.min(stageW, stageH) * 0.34;
-    const ringR = n <= 4 ? maxR * 0.8 : maxR;
+
     for (let i = 0; i < n; i++) {
-      const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+      // 随机半径：在 maxR 的 45%~100% 之间随机
+      const r = maxR * rand(0.45, 1.0);
+      // 角度均匀分布但加入随机偏移 (±30°)
+      const baseAngle = (i / n) * Math.PI * 2 - Math.PI / 2;
+      const jitter = rand(-0.55, 0.55); // ±约31°
+      const angle = baseAngle + jitter;
+
       positions.push({
-        x: cx + ringR * Math.cos(angle),
-        y: cy + ringR * Math.sin(angle),
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
       });
     }
+
+    // 利用力导向思想再做一次微调，避免行星重叠
+    const minDist = 130; // 最小间距
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          const dx = positions[j].x - positions[i].x;
+          const dy = positions[j].y - positions[i].y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < minDist && dist > 0.01) {
+            const push = (minDist - dist) / 2;
+            const nx = dx / dist, ny = dy / dist;
+            positions[i].x -= nx * push;
+            positions[i].y -= ny * push;
+            positions[j].x += nx * push;
+            positions[j].y += ny * push;
+          }
+        }
+      }
+      // 限制在舞台内
+      for (let i = 0; i < n; i++) {
+        positions[i].x = clamp(positions[i].x, 50, stageW - 50);
+        positions[i].y = clamp(positions[i].y, 50, stageH - 50);
+      }
+    }
+
     return positions;
   }
 
   /* ========================================================
      背景星空（Canvas）
-     参考图配色：深蓝背景 + 白色闪烁星点 + 4尖金色大星 + 蓝白星云流
+     参考图风格：大量白色+金色星点，大亮星闪烁，浅蓝紫星云
   ======================================================== */
   class StarField {
     constructor(canvas) {
@@ -106,32 +145,36 @@
 
     _populate() {
       const W = this.canvas.width, H = this.canvas.height;
-      // 普通星点
+
+      // 普通星点：大幅增加，更多白色+金色
       this.stars = Array.from({ length: CFG.bgStarCount }, () => ({
         x: Math.random() * W,
         y: Math.random() * H,
-        r: rand(0.3, 1.8),
-        alpha: rand(0.2, 0.9),
-        dA: (Math.random() < 0.5 ? 1 : -1) * rand(0.004, 0.012),
-        // 白色为主，少量淡蓝、淡金
-        hue: Math.random() < 0.7 ? null
-           : Math.random() < 0.5 ? rand(200, 230)  // 淡蓝
-           : rand(40, 55),                           // 淡金
+        r: rand(0.3, 2.2),
+        alpha: rand(0.15, 0.95),
+        dA: (Math.random() < 0.5 ? 1 : -1) * rand(0.003, 0.015),
+        hue: Math.random() < 0.55 ? null          // 纯白
+           : Math.random() < 0.5 ? rand(200, 235) // 淡蓝
+           : rand(38, 55),                         // 金色
       }));
 
-      // 大型四尖亮星（参考图那种明亮十字星芒）
-      this.bigStars = [
-        { x: W*0.28, y: H*0.12, size: rand(12, 18), phase: 0    },
-        { x: W*0.65, y: H*0.08, size: rand(16, 22), phase: 1.2  },
-        { x: W*0.82, y: H*0.22, size: rand(10, 14), phase: 2.4  },
-        { x: W*0.45, y: H*0.05, size: rand(8,  12), phase: 0.6  },
-        { x: W*0.15, y: H*0.30, size: rand(6,  10), phase: 1.8  },
-      ];
+      // 大型亮点（参考图那种闪耀的大星）
+      this.bigStars = [];
+      for (let i = 0; i < CFG.bigStarCount; i++) {
+        this.bigStars.push({
+          x: rand(W * 0.02, W * 0.98),
+          y: rand(H * 0.02, H * 0.45), // 集中在上半部
+          size: rand(7, 24),
+          phase: rand(0, Math.PI * 2),
+          speed: rand(0.3, 1.2),
+          hue: Math.random() < 0.6 ? null : rand(40, 55),
+        });
+      }
     }
 
     start() {
       const tick = () => {
-        this.t += 0.006;
+        this.t += 0.005;
         this._draw();
         this.raf = requestAnimationFrame(tick);
       };
@@ -140,38 +183,38 @@
 
     stop() { cancelAnimationFrame(this.raf); }
 
-    _drawBigStar(ctx, x, y, size, alpha) {
-      // 四尖星芒效果
-      const arms = 4;
+    _drawBigStar(ctx, x, y, size, alpha, hue) {
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(x, y);
 
-      // 中心白点
-      const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.4);
+      // 光晕
+      const glowColor = hue ? `hsl(${hue},90%,80%)` : '#fff';
+      const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.5);
       cg.addColorStop(0, 'rgba(255,255,255,1)');
-      cg.addColorStop(0.3, 'rgba(220,235,255,0.8)');
-      cg.addColorStop(1, 'rgba(180,210,255,0)');
+      cg.addColorStop(0.15, glowColor.replace('80%','85%'));
+      cg.addColorStop(0.5, `${glowColor}80`);
+      cg.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = cg;
       ctx.beginPath();
-      ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2);
+      ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // 十字光芒
+      // 四尖星芒
+      const arms = 4;
       for (let i = 0; i < arms; i++) {
         ctx.save();
         ctx.rotate(i * Math.PI / arms);
-        const lg = ctx.createLinearGradient(0, -size, 0, size);
-        lg.addColorStop(0,   'rgba(220,240,255,0)');
-        lg.addColorStop(0.45,'rgba(255,255,255,0.9)');
+        const lg = ctx.createLinearGradient(0, -size * 1.2, 0, size * 1.2);
+        lg.addColorStop(0,   'rgba(255,255,255,0)');
+        lg.addColorStop(0.44,'rgba(255,255,255,0.85)');
         lg.addColorStop(0.5, 'rgba(255,255,255,1)');
-        lg.addColorStop(0.55,'rgba(255,255,255,0.9)');
-        lg.addColorStop(1,   'rgba(220,240,255,0)');
+        lg.addColorStop(0.56,'rgba(255,255,255,0.85)');
+        lg.addColorStop(1,   'rgba(255,255,255,0)');
         ctx.fillStyle = lg;
-        ctx.fillRect(-0.8, -size, 1.6, size * 2);
+        ctx.fillRect(-0.7, -size * 1.2, 1.4, size * 2.4);
         ctx.restore();
       }
-
       ctx.restore();
     }
 
@@ -180,59 +223,67 @@
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
-      // ---- 星云层 ---- (参考图：蓝白银流动感)
-      // 主星云：中偏左，蓝白
-      const g1 = ctx.createRadialGradient(W*0.35, H*0.35, 0, W*0.35, H*0.35, W*0.42);
-      g1.addColorStop(0,   'rgba(140,190,255,0.10)');
-      g1.addColorStop(0.4, 'rgba(100,160,255,0.05)');
+      // ---- 星云层（参考图：浅蓝+薰衣草紫） ----
+      // 主星云：中上部，淡蓝白
+      const g1 = ctx.createRadialGradient(W*0.32, H*0.28, 0, W*0.32, H*0.28, W*0.5);
+      g1.addColorStop(0,   'rgba(200,225,255,0.12)');
+      g1.addColorStop(0.35,'rgba(170,200,240,0.07)');
       g1.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = g1;
       ctx.fillRect(0, 0, W, H);
 
-      // 次星云：右侧，淡紫白
-      const g2 = ctx.createRadialGradient(W*0.72, H*0.25, 0, W*0.72, H*0.25, W*0.38);
-      g2.addColorStop(0,   'rgba(180,160,255,0.09)');
-      g2.addColorStop(0.5, 'rgba(140,130,220,0.04)');
+      // 次星云：右中，薰衣草紫
+      const g2 = ctx.createRadialGradient(W*0.7, H*0.35, 0, W*0.7, H*0.35, W*0.4);
+      g2.addColorStop(0,   'rgba(210,190,240,0.10)');
+      g2.addColorStop(0.45,'rgba(180,160,225,0.05)');
       g2.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = g2;
       ctx.fillRect(0, 0, W, H);
 
-      // 银河流带：斜向流光（参考图中间蜿蜒的白色流）
-      const milkyW = W * 0.06;
-      const milkyAngle = -0.4;
+      // 第三星云：左上，柔粉
+      const g3 = ctx.createRadialGradient(W*0.18, H*0.12, 0, W*0.18, H*0.12, W*0.35);
+      g3.addColorStop(0,   'rgba(255,220,230,0.08)');
+      g3.addColorStop(0.5, 'rgba(240,200,220,0.03)');
+      g3.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = g3;
+      ctx.fillRect(0, 0, W, H);
+
+      // 银河斜带
+      const mw = W * 0.05;
+      const ma = -0.35;
       ctx.save();
-      ctx.translate(W*0.5, H*0.45);
-      ctx.rotate(milkyAngle);
+      ctx.translate(W*0.48, H*0.38);
+      ctx.rotate(ma);
       const mg = ctx.createLinearGradient(-W*0.5, 0, W*0.5, 0);
       mg.addColorStop(0,   'rgba(0,0,0,0)');
-      mg.addColorStop(0.3, 'rgba(200,225,255,0.04)');
-      mg.addColorStop(0.5, 'rgba(220,240,255,0.09)');
-      mg.addColorStop(0.7, 'rgba(200,225,255,0.04)');
+      mg.addColorStop(0.28,'rgba(210,230,255,0.04)');
+      mg.addColorStop(0.5, 'rgba(230,240,255,0.10)');
+      mg.addColorStop(0.72,'rgba(210,230,255,0.04)');
       mg.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = mg;
-      ctx.fillRect(-W*0.6, -milkyW/2, W*1.2, milkyW);
+      ctx.fillRect(-W*0.6, -mw/2, W*1.2, mw);
       ctx.restore();
 
       // ---- 普通星点 ----
       for (const s of this.stars) {
         s.alpha += s.dA;
-        if (s.alpha > 0.95 || s.alpha < 0.08) s.dA *= -1;
+        if (s.alpha > 0.95 || s.alpha < 0.05) s.dA *= -1;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         if (s.hue !== null) {
-          ctx.fillStyle = `hsl(${s.hue},80%,90%)`;
+          ctx.fillStyle = `hsl(${s.hue},80%,88%)`;
         } else {
           ctx.fillStyle = '#FFFFFF';
         }
-        ctx.globalAlpha = clamp(s.alpha, 0.05, 1);
+        ctx.globalAlpha = clamp(s.alpha, 0.04, 1);
         ctx.fill();
         ctx.globalAlpha = 1;
       }
 
-      // ---- 大型四尖亮星 ----
+      // ---- 大型亮星 ----
       for (const bs of this.bigStars) {
-        const alpha = 0.6 + 0.4 * Math.sin(t * 0.8 + bs.phase);
-        this._drawBigStar(ctx, bs.x, bs.y, bs.size, alpha);
+        const alpha = 0.55 + 0.45 * Math.sin(t * bs.speed + bs.phase);
+        this._drawBigStar(ctx, bs.x, bs.y, bs.size, alpha, bs.hue);
       }
     }
   }
@@ -262,7 +313,7 @@
       dot.className = 'star-dot';
       dot.style.cssText = `
         background:${this.color};
-        box-shadow:0 0 ${this.size*2}px ${this.color},0 0 ${this.size}px rgba(255,255,255,0.5);
+        box-shadow:0 0 ${this.size*2.5}px ${this.color},0 0 ${this.size*1.2}px rgba(255,255,255,0.6);
       `;
 
       const tip = document.createElement('div');
@@ -291,7 +342,7 @@
     render(cx, cy) {
       if (!this.el) return;
       const x = cx + this.orbitR * Math.cos(this.angle);
-      const y = cy + this.orbitR * Math.sin(this.angle) * 0.58; // 椭圆感
+      const y = cy + this.orbitR * Math.sin(this.angle) * 0.58;
       this.el.style.left = x + 'px';
       this.el.style.top  = y + 'px';
     }
@@ -302,7 +353,7 @@
   }
 
   /* ========================================================
-     世界观行星
+     世界观行星（不带badge数字）
   ======================================================== */
   class WorldPlanet {
     constructor({ world, x, y, chars, stage, onDetail, orbitEls }) {
@@ -312,7 +363,7 @@
       this.chars    = chars || [];
       this.stage    = stage;
       this.onDetail = onDetail;
-      this.orbitEls = orbitEls; // 共享轨道DOM数组
+      this.orbitEls = orbitEls;
       this.el       = null;
       this.stars    = [];
       this._build();
@@ -329,9 +380,9 @@
     }
 
     _build() {
-      const th   = this._theme();
-      const sz   = this._size();
-      const w    = this.world;
+      const th = this._theme();
+      const sz = this._size();
+      const w  = this.world;
 
       const el = document.createElement('div');
       el.className = `world-planet ${th.cls}`;
@@ -344,17 +395,17 @@
           <div class="planet-core" style="
             width:${sz}px;height:${sz}px;
             background:radial-gradient(circle at 35% 32%,
-              ${lighten(th.primary, 38)} 0%,
+              ${lighten(th.primary, 40)} 0%,
               ${th.primary} 42%,
               ${darken(th.primary, 22)} 80%,
-              ${darken(th.primary, 40)} 100%
+              ${darken(th.primary, 42)} 100%
             );
             --planet-glow:${th.glow};
             box-shadow:
-              inset -6px -6px 16px rgba(0,0,0,0.42),
-              inset 4px 4px 10px rgba(255,255,255,0.16),
-              0 0 24px ${th.glow},
-              0 0 60px ${th.glow.replace('0.6','0.2')};
+              inset -5px -5px 14px rgba(0,0,0,0.35),
+              inset 3px 3px 8px rgba(255,255,255,0.22),
+              0 0 20px ${th.glow},
+              0 0 50px ${th.glow.replace('0.55','0.2').replace('0.5','0.18')};
           ">
             <div class="planet-surface" style="
               background:repeating-linear-gradient(
@@ -364,7 +415,6 @@
               );
             "></div>
           </div>
-          ${this.chars.length > 0 ? `<div class="planet-badge">${this.chars.length}</div>` : ''}
         </div>
         <div class="planet-label">${escHtml(w.name)}</div>
       `;
@@ -387,7 +437,6 @@
         const orbitR = CFG.orbitRadii[ring];
         const count  = Math.min(perOrbit[ring], this.chars.length - idx);
 
-        // 轨道圆环 DOM：用 left/top 对应行星坐标，CSS transform(-50%,-50%) scaleY(0.6) 负责椭圆
         const orbitEl = document.createElement('div');
         orbitEl.className = 'orbit-ring';
         orbitEl.style.cssText = `
@@ -402,8 +451,8 @@
         this._orbitDomList.push(orbitEl);
 
         for (let i = 0; i < count; i++, idx++) {
-          const angle = (i / count) * Math.PI * 2 + rand(0, 0.4);
-          const speed = CFG.starSpeedBase * (1 + rand(0, 0.5)) * (ring === 0 ? 1 : 0.72);
+          const angle = (i / count) * Math.PI * 2 + rand(0, 0.5);
+          const speed = CFG.starSpeedBase * (1 + rand(0, 0.6)) * (ring === 0 ? 1 : 0.7);
           const star  = new OrbitingStar({
             oc: this.chars[idx],
             orbitR,
@@ -419,7 +468,6 @@
 
     _onEnter() {
       CosmosEngine.showHoverCard(this.world, this.chars, this.el);
-      // 轨道高亮
       if (this._orbitDomList) {
         this._orbitDomList.forEach(o => o.classList.add('highlight'));
       }
@@ -453,7 +501,7 @@
   ======================================================== */
   const CosmosEngine = {
     stage:     null,
-    viewport:  null,   // 缩放/平移用的内层容器
+    viewport:  null,
     canvas:    null,
     starField: null,
     planets:   [],
@@ -461,16 +509,13 @@
     raf:       null,
     lastTime:  0,
 
-    // 拖拽状态
     _drag: { active: false, startX: 0, startY: 0, origX: 0, origY: 0 },
-    // 缩放状态
     _view: { scale: 1, tx: 0, ty: 0 },
 
     init(stageEl, canvasEl) {
       this.stage  = stageEl;
       this.canvas = canvasEl;
 
-      // 创建 viewport 容器
       let vp = stageEl.querySelector('.cosmos-viewport');
       if (!vp) {
         vp = document.createElement('div');
@@ -524,7 +569,6 @@
     _bindDragZoom() {
       const stage = this.stage;
 
-      // 滚轮缩放
       stage.addEventListener('wheel', (e) => {
         e.preventDefault();
         const factor = e.deltaY < 0 ? 1.1 : 0.91;
@@ -532,7 +576,6 @@
         this._applyTransform();
       }, { passive: false });
 
-      // 拖拽平移
       stage.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         this._drag.active = true;
@@ -557,7 +600,6 @@
         stage.classList.remove('is-dragging');
       });
 
-      // 触摸支持
       let lastTouchDist = 0;
       stage.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
@@ -607,7 +649,6 @@
 
     /* ---- 悬浮卡片 ---- */
     _buildHoverCard() {
-      // 复用已有
       let card = document.querySelector('.world-hover-card');
       if (!card) {
         card = document.createElement('div');
@@ -633,7 +674,7 @@
       const tn = { dark:'黑暗', light:'温馨', neutral:'中性', mixed:'明暗交织' };
       const tags = [];
       if (world.type) tags.push(`<span class="tag">${tl[world.type]||world.type}</span>`);
-      if (world.tone) tags.push(`<span class="tag" style="background:rgba(160,130,255,0.14);color:#c0b0ff;border-color:rgba(160,130,255,0.24);">${tn[world.tone]||world.tone}</span>`);
+      if (world.tone) tags.push(`<span class="tag" style="background:rgba(140,120,200,0.12);color:#5040a0;border-color:rgba(140,120,200,0.22);">${tn[world.tone]||world.tone}</span>`);
       this.hoverCard.innerHTML = `
         <div class="card-title">${escHtml(world.name)}</div>
         ${tags.length ? `<div class="card-tags">${tags.join('')}</div>` : ''}
@@ -676,11 +717,9 @@
 
     const section = worldsList.closest('.worlds-section') || worldsList.parentElement;
 
-    // ---- 清理并重建工具栏 ----
-    // 找到原有的工具栏容器（worlds-section 下第一个 .flex.justify-between）
+    // 替换原有工具栏
     const oldBar = section.querySelector('.flex.justify-between');
     if (oldBar) {
-      // 替换成宇宙风工具栏
       const uiBar = document.createElement('div');
       uiBar.className = 'cosmos-ui-bar';
       uiBar.innerHTML = `
@@ -706,7 +745,7 @@
       oldBar.parentNode.replaceChild(uiBar, oldBar);
     }
 
-    // ---- 构建星图舞台 ----
+    // 构建星图+网格双容器
     worldsList.innerHTML = `
       <div id="cosmosViewWrap" style="grid-column:1/-1;">
         <div class="cosmos-stage" id="cosmosStage"><div class="cosmos-viewport"></div></div>
@@ -716,7 +755,6 @@
 
     const stage = document.getElementById('cosmosStage');
 
-    // 初始化引擎（复用已初始化的 viewport 容器）
     CosmosEngine.viewport = stage.querySelector('.cosmos-viewport');
     CosmosEngine.stage    = stage;
 
@@ -755,18 +793,20 @@
     const wrap = document.getElementById('gridViewWrap');
     if (!wrap) return;
     if (!worlds || worlds.length === 0) {
-      wrap.innerHTML = '<p style="color:rgba(160,200,255,0.5);text-align:center;padding:3rem;">暂无世界观</p>';
+      wrap.innerHTML = '<p style="color:rgba(50,70,100,0.5);text-align:center;padding:3rem;">暂无世界观</p>';
       return;
     }
     const tl = { fantasy:'奇幻', scifi:'科幻', modern:'现代', historical:'古风', other:'其他' };
     const tn = { dark:'黑暗', light:'温馨', neutral:'中性', mixed:'明暗交织' };
-    wrap.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem;';
+    // 只设置网格布局属性，不覆盖 display
+    wrap.style.gridTemplateColumns = 'repeat(auto-fill,minmax(260px,1fr))';
+    wrap.style.gap = '1.25rem';
     wrap.innerHTML = worlds.map(w => `
       <div class="card" style="cursor:pointer;" onclick="showWorldDetail('${w.$id||w.id}')">
-        <div class="card-cover" style="height:140px;background:rgba(6,16,50,0.7);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius-md) var(--radius-md) 0 0;">
+        <div class="card-cover" style="height:140px;background:rgba(200,215,240,0.45);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius-md) var(--radius-md) 0 0;">
           ${w.coverImage
             ? `<img src="${escHtml(w.coverImage)}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`
-            : `<span style="font-size:2.5rem;opacity:0.25;">✦</span>`}
+            : `<span style="font-size:2.5rem;opacity:0.2;">✦</span>`}
         </div>
         <div class="card-body" style="padding:1rem;">
           <h3 style="margin:0 0 0.5rem;">${escHtml(w.name)}</h3>
@@ -775,16 +815,16 @@
             ${w.tone ? `<span class="badge badge-secondary">${tn[w.tone]||w.tone}</span>` : ''}
           </div>
           ${w.description ? `<p class="text-muted" style="margin:0;font-size:0.8rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escHtml(w.description)}</p>` : ''}
-          <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.8rem;color:rgba(160,200,255,0.5);">
+          <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.8rem;color:rgba(50,70,100,0.5);">
             <span>${w.characterCount||0} 角色</span>
             <span>${w.storyCount||0} 故事</span>
           </div>
         </div>
-        <div class="card-footer" style="padding:0.5rem 1rem;border-top:1px solid rgba(100,160,255,0.1);display:flex;justify-content:flex-end;gap:4px;">
+        <div class="card-footer" style="padding:0.5rem 1rem;border-top:1px solid rgba(120,160,210,0.15);display:flex;justify-content:flex-end;gap:4px;">
           <button class="btn btn-ghost btn-sm btn-icon" title="编辑" onclick="event.stopPropagation();editWorld('${w.$id||w.id}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="btn btn-ghost btn-sm btn-icon" style="color:rgba(255,100,100,0.7);" title="删除" onclick="event.stopPropagation();deleteWorldConfirm('${w.$id||w.id}','${escHtml(w.name)}')">
+          <button class="btn btn-ghost btn-sm btn-icon" style="color:rgba(200,70,70,0.7);" title="删除" onclick="event.stopPropagation();deleteWorldConfirm('${w.$id||w.id}','${escHtml(w.name)}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/></svg>
           </button>
         </div>
@@ -804,6 +844,7 @@
       this.worlds   = worlds;
       this.charsMap = charsMap;
       mountCosmosView(worlds, charsMap);
+      // 网格视图提前构建，但保持隐藏
       mountGridView(worlds);
     },
 
@@ -813,16 +854,17 @@
       const gw = document.getElementById('gridViewWrap');
       const bc = document.getElementById('vsw-cosmos');
       const bg = document.getElementById('vsw-grid');
+
       if (view === 'cosmos') {
-        cw && (cw.style.display = '');
-        gw && (gw.style.display = 'none');
-        bc && bc.classList.add('active');
-        bg && bg.classList.remove('active');
+        if (cw) cw.style.display = '';
+        if (gw) gw.style.display = 'none';
+        if (bc) bc.classList.add('active');
+        if (bg) bg.classList.remove('active');
       } else {
-        cw && (cw.style.display = 'none');
-        gw && (gw.style.display = '');
-        bc && bc.classList.remove('active');
-        bg && bg.classList.add('active');
+        if (cw) cw.style.display = 'none';
+        if (gw) { gw.style.display = 'grid'; }   // 切换到网格显示
+        if (bc) bc.classList.remove('active');
+        if (bg) bg.classList.add('active');
       }
     },
 
@@ -851,7 +893,15 @@
           </div>
         `;
       }
+      // 重建网格视图
       mountGridView(worlds);
+      // 如果当前是网格视图，保持显示
+      if (this.currentView === 'grid') {
+        const gw = document.getElementById('gridViewWrap');
+        if (gw) gw.style.display = 'grid';
+        const cw = document.getElementById('cosmosViewWrap');
+        if (cw) cw.style.display = 'none';
+      }
     },
   };
 
