@@ -239,7 +239,8 @@ body.cosmos-mode .worlds-section > .flex.justify-between {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  opacity: 0.82;
+  opacity: 0.85;
+  z-index: 1;
   pointer-events: none;
 }
 

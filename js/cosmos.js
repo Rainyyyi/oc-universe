@@ -359,96 +359,91 @@
      星球表面纹理生成 —— 每种类型不同的视觉风格
   ======================================================== */
   function _buildPlanetSurface(th, sz, type) {
-    const p = th.primary; // e.g. #7a38d8
-    const dark  = darken(p, 55);   // 深暗色
-    const mid   = darken(p, 25);   // 中暗色
-    const base  = p;               // 原色
-    const lite  = lighten(p, 40);  // 亮色
-    const xlite = lighten(p, 65);  // 极亮色
+    const p = th.primary;
+    // 用白+极暗做最大对比，不再是同色系微调
+    const white = 'rgba(255,255,255,0.7)';
+    const black = 'rgba(0,0,0,0.45)';
+    const tint  = lighten(p, 55);
+    const shade = darken(p, 60);
 
     let bgStyle = '';
 
     switch (type) {
       case 'fantasy':
-        // 魔法旋流：粗宽对角条纹
+        // 魔法旋流：白+暗交替对角宽带
         bgStyle = `background:
           repeating-linear-gradient(142deg,
-            ${dark} 0, ${dark} 4px,
-            transparent 4px, transparent 6px,
-            ${lite} 6px, ${lite} 9px,
-            transparent 9px, transparent 12px,
-            ${mid} 12px, ${mid} 16px,
-            transparent 16px, transparent 18px,
-            ${xlite} 18px, ${xlite} 20px,
-            transparent 20px, transparent 28px
+            ${white} 0px, ${white} 6px,
+            ${shade} 6px, ${shade} 12px,
+            ${tint} 12px, ${tint} 16px,
+            ${black} 16px, ${black} 20px,
+            transparent 20px, transparent 24px,
+            ${white} 24px, ${white} 28px,
+            transparent 28px, transparent 36px
           );`;
         break;
 
       case 'scifi':
-        // 科技环带：水平粗纬度条纹
+        // 科技环带：白/黑水平纬度宽带（木星风格）
         bgStyle = `background:
           repeating-linear-gradient(0deg,
-            ${dark} 0, ${dark} 4px,
-            transparent 4px, transparent 6px,
-            ${mid} 6px, ${mid} 10px,
-            transparent 10px, transparent 13px,
-            ${lite} 13px, ${lite} 16px,
-            transparent 16px, transparent 18px,
-            ${base} 18px, ${base} 21px,
-            transparent 21px, transparent 24px,
-            ${xlite} 24px, ${xlite} 26px,
-            transparent 26px, transparent 38px
+            ${white} 0px, ${white} 4px,
+            ${shade} 4px, ${shade} 10px,
+            transparent 10px, transparent 14px,
+            ${tint} 14px, ${tint} 18px,
+            ${black} 18px, ${black} 24px,
+            transparent 24px, transparent 28px,
+            ${white} 28px, ${white} 32px,
+            transparent 32px, transparent 40px
           );`;
         break;
 
       case 'modern':
-        // 生机脉纹：粗浅主纹 + 深暗细纹
+        // 生机脉纹：浅色主带+深色细纹交替
         bgStyle = `background:
           repeating-linear-gradient(0deg,
-            ${xlite} 0, ${xlite} 3px,
-            transparent 3px, transparent 5px,
-            ${dark} 5px, ${dark} 8px,
-            transparent 8px, transparent 16px,
-            ${lite} 16px, ${lite} 19px,
-            transparent 19px, transparent 21px,
-            ${mid} 21px, ${mid} 24px,
-            transparent 24px, transparent 38px
+            ${tint} 0px, ${tint} 6px,
+            ${black} 6px, ${black} 10px,
+            transparent 10px, transparent 14px,
+            ${white} 14px, ${white} 18px,
+            ${shade} 18px, ${shade} 22px,
+            transparent 22px, transparent 28px,
+            ${tint} 28px, ${tint} 34px,
+            transparent 34px, transparent 42px
           );`;
         break;
 
       case 'historical':
-        // 锦绣暗纹：粗菱形交错
+        // 锦绣纹：粗菱形交叉
         bgStyle = `background:
           repeating-linear-gradient(45deg,
-            ${dark} 0, ${dark} 3px,
-            transparent 3px, transparent 5px,
-            ${lite} 5px, ${lite} 8px,
-            transparent 8px, transparent 12px
+            ${white} 0px, ${white} 5px,
+            ${shade} 5px, ${shade} 10px,
+            transparent 10px, transparent 14px
           ),
           repeating-linear-gradient(-45deg,
-            ${mid} 0, ${mid} 3px,
-            transparent 3px, transparent 7px,
-            ${xlite} 7px, ${xlite} 10px,
-            transparent 10px, transparent 12px
+            ${tint} 0px, ${tint} 4px,
+            ${black} 4px, ${black} 9px,
+            transparent 9px, transparent 14px
           );`;
         break;
 
       case 'other':
       default:
-        // 星尘斑点：大号醒目斑点
+        // 星尘斑点：大号醒目圆斑
         bgStyle = `background:
-          radial-gradient(circle at 18% 28%, ${xlite} 4px, transparent 5px),
-          radial-gradient(circle at 62% 22%, ${dark} 7px, transparent 8px),
-          radial-gradient(circle at 38% 52%, ${lite} 5px, transparent 6px),
-          radial-gradient(circle at 72% 58%, ${base} 7px, transparent 8px),
-          radial-gradient(circle at 28% 68%, ${mid} 8px, transparent 9px),
-          radial-gradient(circle at 55% 72%, ${xlite} 4px, transparent 5px),
-          radial-gradient(circle at 78% 38%, ${dark} 6px, transparent 7px),
-          radial-gradient(circle at 22% 46%, ${lite} 5px, transparent 6px),
-          radial-gradient(circle at 48% 18%, ${mid} 4px, transparent 5px),
-          radial-gradient(circle at 68% 78%, ${xlite} 6px, transparent 7px),
-          radial-gradient(circle at 32% 82%, ${dark} 5px, transparent 6px),
-          radial-gradient(circle at 82% 14%, ${base} 5px, transparent 6px);
+          radial-gradient(circle at 15% 25%, ${white} 6px, transparent 7px),
+          radial-gradient(circle at 65% 18%, ${shade} 9px, transparent 10px),
+          radial-gradient(circle at 35% 55%, ${tint} 7px, transparent 8px),
+          radial-gradient(circle at 75% 60%, ${black} 8px, transparent 9px),
+          radial-gradient(circle at 22% 72%, ${white} 5px, transparent 6px),
+          radial-gradient(circle at 58% 78%, ${shade} 7px, transparent 8px),
+          radial-gradient(circle at 80% 38%, ${tint} 6px, transparent 7px),
+          radial-gradient(circle at 18% 48%, ${black} 5px, transparent 6px),
+          radial-gradient(circle at 50% 15%, ${white} 6px, transparent 7px),
+          radial-gradient(circle at 70% 82%, ${shade} 8px, transparent 9px),
+          radial-gradient(circle at 28% 85%, ${tint} 5px, transparent 6px),
+          radial-gradient(circle at 85% 12%, ${white} 6px, transparent 7px);
           background-color: transparent;`;
         break;
     }
