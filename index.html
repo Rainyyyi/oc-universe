@@ -4,18 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OC宇宙 - 原创角色管理平台</title>
-  <!-- 主题初始化（必须最靠前） -->
+  <!-- 宇宙主题：固定深色，防止加载闪白 -->
   <script>
-    try {
-      var t = localStorage.getItem('oc_theme') || 'light';
-      document.documentElement.setAttribute('data-theme', t);
-    } catch(e) {}
+    document.documentElement.setAttribute('data-theme', 'dark');
   </script>
-  <!-- 关键主题色 & 暗色变量（必须内联，防止 CSS 加载期间闪白） -->
   <style>
-    html, body { background-color: #FFFFFF; }
-    html[data-theme="dark"], html[data-theme="dark"] body { background-color: #070B14; }
-    html[data-theme="dark"] { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
+    html, body {
+      background: linear-gradient(180deg,#0a1540 0%,#0d1e5e 30%,#1a2d7a 60%,#4a5060 85%,#c09070 100%) !important;
+      min-height: 100vh;
+    }
+    /* 暗色变量 */
+    html { --primary-color: #60A5FA; --primary-hover: #93C5FD; --bg-primary: #070B14; --bg-secondary: #0D1424; --bg-tertiary: #111827; --bg-card: #0D1424; --bg-sidebar: #090E1A; --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B; --text-inverse: #FFFFFF; --border-color: #1E2D4A; --border-light: #243354; }
   </style>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
@@ -506,11 +505,12 @@
   <script>
     // 页面初始化
     document.addEventListener('DOMContentLoaded', async function() {
-      // 激活宇宙模式
+      // 激活宇宙模式（固定深色主题）
       document.body.classList.add('cosmos-mode');
-
-      // 初始化主题
-      initTheme();
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('oc_theme', 'dark');
+      // 初始化 Lucide 图标
+      if (window.lucide) lucide.createIcons();
 
       // 初始化 Appwrite 数据模式（检测登录状态）
       await OCData.initDataMode();
