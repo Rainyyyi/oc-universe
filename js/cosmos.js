@@ -13,8 +13,8 @@
   ======================================================== */
   const CFG = {
     planetSizes:    { sm: 50, md: 66, lg: 84 },
-    orbitRadii:     [88, 118, 148],
-    orbitPerRing:   [4, 6, 8],
+    orbitRadii:     [82, 112, 148, 190, 238],
+    orbitPerRing:   [3, 4, 5, 7, 11],
     starSizes:      [5, 7, 9],
     starSpeedBase:  0.00028,
     bgStarCount:    420,            // 大幅增加星点
