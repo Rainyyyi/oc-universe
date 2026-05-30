@@ -303,6 +303,26 @@
     </div>
   </div>
 
+    <!-- 角色详情模态框 -->
+  <div class="modal-overlay" id="characterDetailModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="detailCharName">角色详情</h3>
+        <button class="modal-close" onclick="closeCharacterDetail()">
+          <i data-lucide="X"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="characterDetailBody">
+        <!-- 动态填充 -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeCharacterDetail()">关闭</button>
+        <button class="btn btn-secondary" id="detailEditBtn"><i data-lucide="UserPen"></i> 编辑</button>
+        <button class="btn btn-primary" id="detailChatBtn"><i data-lucide="MessageCircle"></i> 与TA聊天</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 日记模态框 -->
   <div class="modal-overlay" id="diaryModal">
     <div class="modal modal-lg">
@@ -529,40 +549,24 @@
     
     // 显示创建角色模态框
     async function showCreateCharacterModal() {
-      // 加载世界观到下拉框
-      try {
-        const worlds = await OCData.getWorlds();
-        const worldSelect = document.getElementById('characterWorldSelect');
-        let worldOptions = '<option value="">选择世界观...</option>';
-        if (worlds && worlds.length > 0) {
-          worlds.forEach(w => {
-            const id = w.$id || w.id;
-            const name = w.name || '未命名世界';
-            worldOptions += `<option value="${id}">${name}</option>`;
-          });
-        } else {
-          // 世界观列表为空 → 提示用户
-          worldOptions += '<option value="" disabled>暂无世界观，请先创建</option>';
-        }
-        worldSelect.innerHTML = worldOptions;
+      // 加载世界观到下拉框（复用）
+      const worldSelect = document.getElementById('characterWorldSelect');
+      const worlds = await loadWorldsToSelect(worldSelect);
 
-        // 如果没有世界观，显示提示
-        if (!worlds || worlds.length === 0) {
-          const hint = document.getElementById('worldSelectHint');
-          if (!hint) {
-            const hintEl = document.createElement('div');
-            hintEl.id = 'worldSelectHint';
-            hintEl.style.cssText = 'margin-top:6px;font-size:13px;color:#f59e0b;display:flex;align-items:center;gap:6px;';
-            hintEl.innerHTML = '<i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0;"></i><span>还没有 worldview 喔，请先去首页创建一个世界观吧</span>';
-            worldSelect.parentNode.insertBefore(hintEl, worldSelect.nextSibling);
-            lucide.createIcons();
-          }
-        } else {
-          const hint = document.getElementById('worldSelectHint');
-          if (hint) hint.remove();
+      // 提示用户
+      if (!worlds || worlds.length === 0) {
+        let hint = document.getElementById('worldSelectHint');
+        if (!hint) {
+          hint = document.createElement('div');
+          hint.id = 'worldSelectHint';
+          hint.style.cssText = 'margin-top:6px;font-size:13px;color:#f59e0b;display:flex;align-items:center;gap:6px;';
+          hint.innerHTML = '<i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0;"></i><span>还没有世界观，请先去首页创建一个吧</span>';
+          worldSelect.parentNode.insertBefore(hint, worldSelect.nextSibling);
+          lucide.createIcons();
         }
-      } catch (err) {
-        console.error('加载世界观列表失败:', err);
+      } else {
+        const hint = document.getElementById('worldSelectHint');
+        if (hint) hint.remove();
       }
 
       document.getElementById('createCharacterModal').classList.add('active');
@@ -624,6 +628,26 @@
       }
     }
 
+    // 加载世界观列表到指定select（可复用）
+    async function loadWorldsToSelect(selectEl) {
+      try {
+        const worlds = await OCData.getWorlds();
+        let html = '<option value="">选择世界观...</option>';
+        if (worlds && worlds.length > 0) {
+          worlds.forEach(w => {
+            const id = w.$id || w.id;
+            const name = w.name || '未命名世界';
+            html += `<option value="${id}">${name}</option>`;
+          });
+        }
+        selectEl.innerHTML = html;
+        return worlds;
+      } catch (err) {
+        console.error('加载世界观失败:', err);
+        return [];
+      }
+    }
+
     // 事后注入操作按钮到每个卡片（事件委托，不碰模板字符串）
     var _editingCharId = null;
 
@@ -631,18 +655,21 @@
       try {
         const char = await OCData.getCharacter(charId);
         if (!char) { showNotification('未找到该角色', 'error'); return; }
-
         _editingCharId = charId;
+
+        // 先加载世界观列表，再填值（修复：下拉框可能还没选项）
+        const worldSelect = document.getElementById('characterWorldSelect');
+        if (worldSelect) {
+          await loadWorldsToSelect(worldSelect);
+          worldSelect.value = char.worldId || '';
+        }
+
         // 填充表单
         document.getElementById('charName').value = char.name || '';
         document.getElementById('charAge').value = char.age || '';
         document.getElementById('charGender').value = char.gender || '';
         document.getElementById('charTags').value = Array.isArray(char.tags) ? char.tags.join(',') : (char.tags || '');
         document.getElementById('charDescription').value = char.description || char.brief || '';
-
-        // 世界观选择
-        const worldSelect = document.getElementById('characterWorldSelect');
-        if (worldSelect) worldSelect.value = char.worldId || '';
 
         // 头像预览
         const avatarPreview = document.getElementById('avatarPreview');
@@ -663,7 +690,7 @@
         document.getElementById('createCharacterModal').classList.add('active');
         if (window.lucide) lucide.createIcons();
       } catch (e) {
-        showNotification('加载角色数据失败: ' + e.message, 'error');
+        showNotification('加载角色数据失败: ' + (e.message || ''), 'error');
       }
     }
 
@@ -718,10 +745,89 @@
       }
     }
 
+    // ========== 角色详情弹窗 ==========
+    async function viewCharacter(charId) {
+      try {
+        var char = await OCData.getCharacter(charId);
+        // 本地模式兜底：OCData 找不到时从 localStorage 读取
+        if (!char) {
+          var localChars = JSON.parse(localStorage.getItem('oc_characters') || '[]');
+          char = localChars.find(function(c) { return (c.$id || c.id) === charId; });
+        }
+        if (!char) { showNotification('未找到该角色', 'error'); return; }
+
+        const worldId = char.worldId || '';
+        let worldName = '';
+        try {
+          const worlds = await OCData.getWorlds();
+          const w = worlds.find(w => (w.$id || w.id) === worldId);
+          worldName = w ? (w.name || '未命名世界') : '';
+        } catch(e) {}
+
+        const avatarSrc = char.avatarUrl
+          ? char.avatarUrl
+          : ('https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(char.name || 'default'));
+        const genderLabel = char.gender === 'male' ? '男' : char.gender === 'female' ? '女' : (char.gender || '');
+        const tagsHtml = (Array.isArray(char.tags) ? char.tags : (char.tags || '').split(/[,，]/).map(t=>t.trim()).filter(Boolean))
+          .map(t => `<span class="badge badge-secondary" style="font-size:0.75rem;">${t}</span>`).join(' ');
+
+        document.getElementById('detailCharName').textContent = char.name || '未命名角色';
+
+        document.getElementById('characterDetailBody').innerHTML = `
+          <div style="display:flex;gap:var(--spacing-xl);flex-wrap:wrap;">
+            <div style="flex:0 0 140px;display:flex;flex-direction:column;align-items:center;">
+              <img src="${avatarSrc}" alt="${char.name}" style="width:120px;height:120px;border-radius:50%;object-fit:cover;background:var(--bg-tertiary);border:3px solid var(--border-color);">
+              <div style="margin-top:var(--spacing-md);text-align:center;">
+                ${worldName ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">所属世界观</div><div style="font-size:0.875rem;color:var(--primary-color);">${worldName}</div>` : '<div style="font-size:0.8rem;color:var(--text-muted);">未关联世界观</div>'}
+              </div>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--spacing-md);">
+                ${genderLabel ? `<span class="badge badge-secondary">${genderLabel}</span>` : ''}
+                ${char.age ? `<span class="badge">${char.age}岁</span>` : ''}
+              </div>
+              ${tagsHtml ? `<div style="margin-bottom:var(--spacing-md);">${tagsHtml}</div>` : ''}
+              <h4 style="margin:0 0 var(--spacing-xs);font-size:0.85rem;color:var(--text-muted);">角色简介</h4>
+              <p style="margin:0 0 var(--spacing-lg);line-height:1.6;">${char.description || char.personality || '暂无描述'}</p>
+            </div>
+          </div>
+        `;
+
+        // 绑定弹窗底部按钮
+        document.getElementById('detailEditBtn').onclick = function() {
+          closeCharacterDetail();
+          editCharacter(charId);
+        };
+        document.getElementById('detailChatBtn').onclick = function() {
+          window.location.href = 'chat.html?characterId=' + charId;
+        };
+
+        document.getElementById('characterDetailModal').classList.add('active');
+        if (window.lucide) lucide.createIcons();
+      } catch (e) {
+        showNotification('加载角色详情失败: ' + (e.message || ''), 'error');
+      }
+    }
+
+    function closeCharacterDetail() {
+      document.getElementById('characterDetailModal').classList.remove('active');
+    }
+
     function _injectCharActions(container) {
       var cards = container.querySelectorAll('.character-card');
       cards.forEach(function(card) {
         if (card.querySelector('.char-action-bar')) return;
+        // 确保 data-char-id 存在（从 onclick 或已有属性读取）
+        var charId = card.getAttribute('data-char-id') || '';
+        if (!charId) {
+          // 从 onclick 提取（兼容两种格式）
+          var onclick = card.getAttribute('onclick') || '';
+          var m = onclick.match(/viewCharacter\('([^']+)'\)/) || onclick.match(/characterId=([^']+)'/);
+          charId = m ? m[1] : '';
+          if (charId) card.setAttribute('data-char-id', charId);
+        }
+        if (!charId) return;
+
         var bar = document.createElement('div');
         bar.className = 'char-action-bar';
         bar.style.cssText = 'padding:6px 12px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:6px;background:var(--bg-secondary);border-radius:0 0 var(--radius-md) var(--radius-md);';
@@ -732,8 +838,7 @@
         editBtn.textContent = '编辑';
         editBtn.onclick = function(e) {
           e.stopPropagation();
-          var id = card.getAttribute('data-char-id') || '';
-          editCharacter(id);
+          editCharacter(charId);
         };
 
         var delBtn = document.createElement('button');
@@ -742,13 +847,11 @@
         delBtn.textContent = '删除';
         delBtn.onclick = function(e) {
           e.stopPropagation();
-          var id = card.getAttribute('data-char-id') || '';
-          deleteCharacter(id);
+          deleteCharacter(charId);
         };
         bar.appendChild(editBtn);
         bar.appendChild(delBtn);
         card.appendChild(bar);
-        card.setAttribute('data-char-id', card.getAttribute('onclick')?.match(/characterId=([^']+)'/)?.[1] || '');
       });
     }
 
@@ -801,7 +904,7 @@
         }
 
         container.innerHTML = list.map(c => `
-          <div class="card character-card" style="cursor:pointer;" onclick="window.location.href='chat.html?characterId=${c.$id || c.id}'">
+          <div class="card character-card" style="cursor:pointer;" onclick="viewCharacter('${c.$id || c.id}')" data-char-id="${c.$id || c.id}">
             <div class="card-cover" style="height:160px;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:var(--radius-md) var(--radius-md) 0 0;">
               ${c.avatarUrl
                 ? `<img src="${c.avatarUrl}" style="width:100%;height:100%;object-fit:cover;" alt="${c.name}">`
@@ -1047,7 +1150,7 @@
       
       // 渲染角色卡片
       charactersList.innerHTML = filteredCharacters.map(character => `
-        <div class="card character-card" onclick="viewCharacter('${character.id}')">
+        <div class="card character-card" onclick="viewCharacter('${character.id}')" data-char-id="${character.id}">
           <div class="card-body" style="text-align: center;">
             <img src="${character.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + character.name}"
                  alt="${character.name}"
@@ -1067,19 +1170,21 @@
       localCards.forEach(function(card) {
         if (card.querySelector('.char-action-bar')) return;
         card.style.position = 'relative';
+        var charId = card.getAttribute('data-char-id') || '';
+        if (!charId) {
+          // fallback: 从 onclick 提取
+          charId = (card.getAttribute('onclick') || '').match(/viewCharacter\('([^']+)'\)/)?.[1] || '';
+        }
+        if (!charId) return;
 
         // 编辑按钮
         var editBtn = document.createElement('button');
         editBtn.className = 'btn btn-ghost btn-sm';
         editBtn.style.cssText = 'position:absolute;top:4px;right:28px;z-index:2;padding:2px 6px;font-size:11px;';
-        editBtn.textContent = '✎';
-        var charIdEdit = card.getAttribute('onclick')?.match(/viewCharacter\('([^']+)'\)/)?.[1] || '';
+        editBtn.textContent = '\u270E'; // ✎
         editBtn.onclick = function(e) {
           e.stopPropagation();
-          // 切换到云端编辑（如果登录了）或本地编辑
-          if (typeof OCData !== 'undefined' && typeof editCharacter === 'function') {
-            editCharacter(charIdEdit);
-          }
+          if (typeof editCharacter === 'function') editCharacter(charId);
         };
 
         // 删除按钮
@@ -1087,12 +1192,11 @@
         btn.className = 'btn btn-ghost btn-sm';
         btn.style.cssText = 'position:absolute;top:4px;right:4px;z-index:2;color:var(--danger);padding:2px 6px;font-size:11px;';
         btn.textContent = 'x';
-        var charIdDel = card.getAttribute('onclick')?.match(/viewCharacter\('([^']+)'\)/)?.[1] || '';
         btn.onclick = function(e) {
           e.stopPropagation();
           if (!confirm('确认删除？')) return;
           var chars = JSON.parse(localStorage.getItem('oc_characters') || '[]');
-          localStorage.setItem('oc_characters', JSON.stringify(chars.filter(function(c){ return c.id !== charIdDel; })));
+          localStorage.setItem('oc_characters', JSON.stringify(chars.filter(function(c){ return c.id !== charId; })));
           filterCharacters();
         };
         card.appendChild(editBtn);
