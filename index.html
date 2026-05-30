@@ -962,9 +962,9 @@
                 : window.AppwriteStorage
                   ? window.AppwriteStorage.upload(fileInput.files[0], true).then(fid => ({
                       fileId: fid,
-                      url: window.AppwriteStorage.previewUrl
-                        ? window.AppwriteStorage.previewUrl(fid)
-                        : (window.AppwriteStorage.fileUrl ? window.AppwriteStorage.fileUrl(fid) : '')
+                      url: window.AppwriteStorage.fileUrl
+                        ? window.AppwriteStorage.fileUrl(fid)
+                        : (window.AppwriteStorage.previewUrl ? window.AppwriteStorage.previewUrl(fid) : '')
                     }))
                   : Promise.reject(new Error('Storage 不可用'))
               ),
@@ -1077,9 +1077,10 @@
           const loggedIn = await OCData.isLoggedIn().catch(() => false);
           if (loggedIn && window.AppwriteStorage) {
             const fileId = await window.AppwriteStorage.upload(editFileInput.files[0], true);
-            const url = window.AppwriteStorage.previewUrl
-              ? window.AppwriteStorage.previewUrl(fileId)
-              : (window.AppwriteStorage.fileUrl ? window.AppwriteStorage.fileUrl(fileId) : '');
+            // 优先用 /view 直链（公开文件可直接访问）
+            const url = window.AppwriteStorage.fileUrl
+              ? window.AppwriteStorage.fileUrl(fileId)
+              : window.AppwriteStorage.previewUrl(fileId);
             data.coverImage = url;
             data.coverFileId = fileId;
           }

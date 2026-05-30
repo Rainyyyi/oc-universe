@@ -287,7 +287,10 @@ async function createInspiration(data) {
  */
 async function uploadFile(file, publicRead = false) {
   const fileId = await window.AppwriteStorage.upload(file, publicRead);
-  const url = window.AppwriteStorage.previewUrl(fileId);
+  // 公开文件用 /view 直链，私有文件用 /preview（需认证）
+  const url = publicRead && window.AppwriteStorage.fileUrl
+    ? window.AppwriteStorage.fileUrl(fileId)
+    : window.AppwriteStorage.previewUrl(fileId);
   return { fileId, url };
 }
 
