@@ -275,7 +275,7 @@ body.cosmos-mode .worlds-section > .flex.justify-between {
 .orbit-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(100, 140, 200, 0.18);
+  border: 1.5px solid rgba(120, 160, 220, 0.30);
   pointer-events: none;
   transform: translate(-50%, -50%) scaleY(0.6);
   transform-origin: center center;
@@ -284,13 +284,13 @@ body.cosmos-mode .worlds-section > .flex.justify-between {
 }
 
 .orbit-ring.highlight {
-  border-color: rgba(100, 140, 220, 0.45) !important;
-  box-shadow: 0 0 14px rgba(100, 150, 220, 0.15);
+  border-color: rgba(120, 160, 230, 0.55) !important;
+  box-shadow: 0 0 16px rgba(120, 160, 230, 0.20);
 }
 
 @keyframes orbit-shimmer {
-  0%, 100% { border-color: rgba(100, 140, 200, 0.12); }
-  50%       { border-color: rgba(100, 140, 200, 0.26); }
+  0%, 100% { border-color: rgba(120, 160, 220, 0.22); }
+  50%       { border-color: rgba(120, 160, 220, 0.38); }
 }
 
 /* ==================== OC 星星粒子 ==================== */
