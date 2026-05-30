@@ -64,7 +64,8 @@
       <!-- 用户状态按钮 -->
       <div id="authBtnGroup" style="display:none;">
         <button class="btn btn-ghost btn-sm" id="userInfoBtn" onclick="showUserInfo()" style="display:none;">
-          <i data-lucide="User"></i>
+          <img id="navAvatarImg" src="" alt="" style="display:none;width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:6px;flex-shrink:0;">
+          <i data-lucide="User" id="navUserIcon" style="margin-right:6px;"></i>
           <span id="userNameDisplay">用户</span>
         </button>
         <button class="btn btn-secondary btn-sm" onclick="showLoginModal()">
@@ -520,6 +521,16 @@
       if (loggedIn) {
         const user = await AppwriteAuth.getCurrentUser().catch(() => null);
         if (nameSpan && user) nameSpan.textContent = user.name || user.email || '用户';
+        // 导航栏头像
+        const navAvatar = document.getElementById('navAvatarImg');
+        const navIcon = document.getElementById('navUserIcon');
+        if (user && user.prefs && user.prefs.avatarUrl) {
+          if (navAvatar) { navAvatar.src = user.prefs.avatarUrl; navAvatar.style.display = ''; }
+          if (navIcon) navIcon.style.display = 'none';
+        } else {
+          if (navAvatar) navAvatar.style.display = 'none';
+          if (navIcon) navIcon.style.display = '';
+        }
         if (userBtn) userBtn.style.display = 'flex';
         if (loginBtn) {
           loginBtn.innerHTML = '<i data-lucide="LogOut"></i><span>退出</span>';
@@ -1170,6 +1181,11 @@
                 avatarPreviewEl.style.backgroundPosition = 'center';
               }
               if (avatarTextEl) avatarTextEl.style.display = 'none';
+              // 立即更新导航栏头像
+              const navAvatar = document.getElementById('navAvatarImg');
+              const navIcon = document.getElementById('navUserIcon');
+              if (navAvatar) { navAvatar.src = fileUrl; navAvatar.style.display = ''; }
+              if (navIcon) navIcon.style.display = 'none';
             } else if (!fileUrl) {
               console.warn('[头像上传] URL 为空，上传可能失败');
               showNotification('头像上传失败：无法获取文件 URL', 'warning');
