@@ -419,10 +419,30 @@
         <div class="planet-label">${escHtml(w.name)}</div>
       `;
 
+      // 星球拖拽（mousedown 启动，mousemove 控制，mouseup 结束）
+      el.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        e.stopPropagation();
+        CosmosEngine._planetDrag = {
+          planet: this,
+          startX: e.clientX,
+          startY: e.clientY,
+          origCx: this.cx,
+          origCy: this.cy,
+          moved: false,
+        };
+        this.stage.classList.add('is-dragging');
+      });
+
       el.addEventListener('mouseenter', () => this._onEnter());
       el.addEventListener('mouseleave', () => this._onLeave());
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        // 刚拖拽过，跳过导航
+        if (CosmosEngine._planetDragWasMoved) {
+          CosmosEngine._planetDragWasMoved = false;
+          return;
+        }
         if (this.onDetail) this.onDetail(w.$id || w.id);
       });
 
@@ -463,6 +483,22 @@
           });
           this.stars.push(star);
         }
+      }
+    }
+
+    moveTo(cx, cy) {
+      this.cx = cx;
+      this.cy = cy;
+      if (this.el) {
+        this.el.style.left = cx + 'px';
+        this.el.style.top = cy + 'px';
+      }
+      // 同步移动轨道环
+      if (this._orbitDomList) {
+        this._orbitDomList.forEach(o => {
+          o.style.left = cx + 'px';
+          o.style.top = cy + 'px';
+        });
       }
     }
 
@@ -511,6 +547,9 @@
 
     _drag: { active: false, startX: 0, startY: 0, origX: 0, origY: 0 },
     _view: { scale: 1, tx: 0, ty: 0 },
+    _planetDrag: null,
+    _planetDragWasMoved: false,
+    _unbindDragZoom: null,
 
     init(stageEl, canvasEl) {
       this.stage  = stageEl;
@@ -565,19 +604,32 @@
       this.raf = requestAnimationFrame(tick);
     },
 
-    /* ---- 拖拽平移 + 滚轮缩放 ---- */
+    /* ---- 拖拽平移 + 滚轮缩放（支持单独拖拽星球） ---- */
     _bindDragZoom() {
-      const stage = this.stage;
+      // 清除旧绑定，防止事件重复
+      if (this._unbindDragZoom) this._unbindDragZoom();
 
-      stage.addEventListener('wheel', (e) => {
+      const stage = this.stage;
+      const listeners = [];
+
+      const on = (el, type, fn, opts) => {
+        el.addEventListener(type, fn, opts);
+        listeners.push({ el, type, fn, opts });
+      };
+
+      // ---- 滚轮缩放 ----
+      on(stage, 'wheel', (e) => {
         e.preventDefault();
         const factor = e.deltaY < 0 ? 1.1 : 0.91;
         this._view.scale = clamp(this._view.scale * factor, CFG.minScale, CFG.maxScale);
         this._applyTransform();
       }, { passive: false });
 
-      stage.addEventListener('mousedown', (e) => {
+      // ---- 鼠标按下（空白区域平移视口，星球上则交给星球自身处理） ----
+      const mdHandler = (e) => {
         if (e.button !== 0) return;
+        // 点到了星球 → 不启动视口拖拽
+        if (e.target.closest('.world-planet')) return;
         this._drag.active = true;
         this._drag.startX = e.clientX;
         this._drag.startY = e.clientY;
@@ -585,23 +637,49 @@
         this._drag.origY  = this._view.ty;
         stage.classList.add('is-dragging');
         e.preventDefault();
-      });
+      };
+      on(stage, 'mousedown', mdHandler);
 
-      window.addEventListener('mousemove', (e) => {
+      // ---- 鼠标移动（星球拖拽优先） ----
+      const mmHandler = (e) => {
+        // 星球拖拽
+        if (this._planetDrag) {
+          const scale = this._view.scale;
+          const dx = (e.clientX - this._planetDrag.startX) / scale;
+          const dy = (e.clientY - this._planetDrag.startY) / scale;
+          this._planetDrag.planet.moveTo(
+            this._planetDrag.origCx + dx,
+            this._planetDrag.origCy + dy
+          );
+          this._planetDrag.moved = true;
+          return;
+        }
+        // 视口平移
         if (!this._drag.active) return;
         this._view.tx = this._drag.origX + (e.clientX - this._drag.startX);
         this._view.ty = this._drag.origY + (e.clientY - this._drag.startY);
         this._applyTransform();
-      });
+      };
+      on(window, 'mousemove', mmHandler);
 
-      window.addEventListener('mouseup', () => {
-        if (!this._drag.active) return;
-        this._drag.active = false;
-        stage.classList.remove('is-dragging');
-      });
+      // ---- 鼠标释放 ----
+      const muHandler = () => {
+        if (this._planetDrag) {
+          if (this._planetDrag.moved) {
+            this._planetDragWasMoved = true;
+          }
+          this._planetDrag = null;
+        }
+        if (this._drag.active) {
+          this._drag.active = false;
+          stage.classList.remove('is-dragging');
+        }
+      };
+      on(window, 'mouseup', muHandler);
 
+      // ---- 触摸手势（暂不支持星球触屏拖拽，仅视口手势） ----
       let lastTouchDist = 0;
-      stage.addEventListener('touchstart', (e) => {
+      on(stage, 'touchstart', (e) => {
         if (e.touches.length === 1) {
           this._drag.active = true;
           this._drag.startX = e.touches[0].clientX;
@@ -616,7 +694,7 @@
         }
       }, { passive: true });
 
-      stage.addEventListener('touchmove', (e) => {
+      on(stage, 'touchmove', (e) => {
         if (e.touches.length === 1 && this._drag.active) {
           this._view.tx = this._drag.origX + (e.touches[0].clientX - this._drag.startX);
           this._view.ty = this._drag.origY + (e.touches[0].clientY - this._drag.startY);
@@ -635,10 +713,17 @@
         }
       }, { passive: true });
 
-      stage.addEventListener('touchend', () => {
+      on(stage, 'touchend', () => {
         this._drag.active = false;
         lastTouchDist = 0;
       });
+
+      // 保存清理函数
+      this._unbindDragZoom = () => {
+        for (const { el, type, fn, opts } of listeners) {
+          el.removeEventListener(type, fn, opts);
+        }
+      };
     },
 
     _applyTransform() {
@@ -768,8 +853,9 @@
       CosmosEngine.starField = new StarField(document.getElementById('cosmos-canvas'));
       CosmosEngine.starField.start();
       CosmosEngine._buildHoverCard();
-      CosmosEngine._bindDragZoom();
     }
+    // 每次挂载都重新绑定（stage 元素可能已被 DOM 重建）
+    CosmosEngine._bindDragZoom();
 
     if (worlds.length === 0) {
       stage.querySelector('.cosmos-viewport').innerHTML = `

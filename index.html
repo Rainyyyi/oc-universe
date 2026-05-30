@@ -507,6 +507,11 @@
       // 初始化 Appwrite 数据模式（检测登录状态）
       await OCData.initDataMode();
 
+      // 同步当前用户 profile 到数据库（供协作者列表/故事创作者显示昵称）
+      if (window.AppwriteProfiles) {
+        window.AppwriteProfiles.sync().catch(() => {});
+      }
+
       // 更新登录按钮状态
       await updateAuthUI();
 
@@ -803,18 +808,26 @@
           container.innerHTML = '<p class="text-muted text-sm" style="margin:0;">暂无协作者</p>';
           return;
         }
+        // 批量查询用户昵称
+        let nameMap = new Map();
+        if (window.AppwriteProfiles) {
+          nameMap = await window.AppwriteProfiles.batchLookup(collabs).catch(() => new Map());
+        }
         container.innerHTML = '<p style="margin:0 0 var(--spacing-xs);font-size:0.8rem;font-weight:500;color:var(--text-secondary);">当前协作者：</p>' +
           '<div style="display:flex;flex-direction:column;gap:6px;">' +
-          collabs.map(uid => `
+          collabs.map(uid => {
+            const displayName = nameMap.get(uid) || uid.slice(0, 12) + '…';
+            return `
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);">
               <span style="font-size:0.85rem;color:var(--text-secondary);">
                 <i data-lucide="User" style="width:0.85rem;height:0.85rem;display:inline;vertical-align:-2px;margin-right:4px;"></i>
-                ${uid}
+                ${escHtml(displayName)}
               </span>
-              <button class="btn btn-ghost btn-sm btn-icon" title="移除" onclick="removeCollaborator('${uid}')" style="color:var(--danger);padding:2px;">
+              <button class="btn btn-ghost btn-sm btn-icon" title="移除" onclick="removeCollaborator('${escHtml(uid)}')" style="color:var(--danger);padding:2px;">
                 <i data-lucide="X" style="width:0.8rem;height:0.8rem;"></i>
               </button>
-            </div>`).join('') + '</div>';
+            </div>`;
+          }).join('') + '</div>';
         if (window.lucide) lucide.createIcons();
       } catch(e) {
         container.innerHTML = '';
@@ -1242,6 +1255,11 @@
 
         closeModal('accountModal');
         showNotification('账号信息已更新', 'success');
+
+        // 同步 profile 到数据库
+        if (window.AppwriteProfiles) {
+          window.AppwriteProfiles.sync().catch(() => {});
+        }
         
         // 刷新导航栏显示的名称
         const nameSpan = document.getElementById('userNameDisplay');
@@ -1317,6 +1335,10 @@
         await OCData.login(email, password);
         closeModal('authModal');
         showNotification('登录成功', 'success');
+        // 同步用户 profile 到数据库
+        if (window.AppwriteProfiles) {
+          window.AppwriteProfiles.sync().catch(() => {});
+        }
         // 刷新整个页面状态
         await updateAuthUI();
         await loadWorlds();
@@ -1340,6 +1362,10 @@
         await window.AppwriteAuth.register(email, password, name);
         closeModal('authModal');
         showNotification('注册成功，已自动登录', 'success');
+        // 同步 profile
+        if (window.AppwriteProfiles) {
+          window.AppwriteProfiles.sync().catch(() => {});
+        }
         await updateAuthUI();
         await loadWorlds();
       } catch (e) {

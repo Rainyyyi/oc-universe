@@ -343,6 +343,10 @@
       initTheme();
       // 初始化 Appwrite 数据模式
       await OCData.initDataMode();
+      // 同步当前用户 profile
+      if (window.AppwriteProfiles) {
+        window.AppwriteProfiles.sync().catch(() => {});
+      }
       // 加载故事列表和世界观筛选
       await Promise.all([loadStories(), loadWorldFilters()]);
       // 初始化灵感碎片角标
@@ -705,12 +709,20 @@
       const container = document.getElementById('storyDetailContent');
       if (!container) return;
 
+      // 查询创作者昵称
+      let creatorName = '';
+      if (story.userId && window.AppwriteProfiles) {
+        const nameMap = await window.AppwriteProfiles.batchLookup([story.userId]).catch(() => new Map());
+        creatorName = nameMap.get(story.userId) || '';
+      }
+
       container.innerHTML = `
         <div style="text-align:center;margin-bottom:16px;">
           <div style="font-size:2.5rem;margin-bottom:8px;color:var(--primary-color);">
             <i data-lucide="BookOpen" style="width:1em;height:1em;"></i>
           </div>
           <h2 style="margin:0 0 4px;font-size:1.3rem;">${escapeHtml(story.title || '未命名故事')}</h2>
+          ${creatorName ? `<p style="margin:2px 0 0;font-size:0.8rem;color:var(--text-muted);"><i data-lucide="User" style="width:0.8rem;height:0.8rem;display:inline;vertical-align:-2px;"></i> <strong>${escapeHtml(creatorName)}</strong> 创作</p>` : ''}
           <span class="tag tag-${statusTag}" style="margin-top:6px;">${statusLabel}</span>
         </div>
 
@@ -1141,12 +1153,19 @@
     }
 
     // 渲染故事卡片（接收过滤后的数组）
-    function renderStoryCards(stories) {
+    async function renderStoryCards(stories) {
       const container = document.getElementById('storiesList');
       const countEl = document.getElementById('storyCount');
       if (!container) return;
 
       if (countEl) countEl.innerHTML = `共 <strong>${stories.length}</strong> 个故事${stories.length === 0 ? '（没有符合条件的结果）' : ''}`;
+
+      // 批量查询创作用户昵称
+      const userIds = [...new Set(stories.map(s => s.userId).filter(Boolean))];
+      let nameMap = new Map();
+      if (userIds.length > 0 && window.AppwriteProfiles) {
+        nameMap = await window.AppwriteProfiles.batchLookup(userIds).catch(() => new Map());
+      }
 
       let html = `<div class="card card-clickable animate-slideUp" onclick="showCreateStoryModal()" style="border: 2px dashed var(--border-color); background: transparent;">
         <div class="card-body" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
@@ -1160,10 +1179,12 @@
       for (const s of stories) {
         const statusLabel = s.status === 'completed' ? '已完成' : s.status === 'writing' ? '写作中' : '草稿';
         const statusTag = s.status === 'completed' ? 'success' : s.status === 'writing' ? 'primary' : 'warning';
+        const creatorName = s.userId ? (nameMap.get(s.userId) || s.userId.slice(0, 10) + '…') : '';
         html += `<div class="card story-card" data-story-id="${s.$id || s.id}" onclick="viewStoryDetail('${s.$id || s.id}')">
           <div class="card-body">
             <h3 style="margin-bottom: var(--spacing-xs);">${s.title || '未命名故事'}</h3>
             ${(s.description || s.summary) ? `<p class="text-muted text-sm" style="margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${s.description || s.summary}</p>` : ''}
+            ${creatorName ? `<p style="margin:4px 0 0;font-size:0.75rem;color:var(--text-muted);"><i data-lucide="User" style="width:0.7rem;height:0.7rem;display:inline;vertical-align:-2px;"></i> 由 <strong>${creatorName}</strong> 创作</p>` : ''}
             <div style="margin-top: var(--spacing-sm); display: flex; gap: var(--spacing-sm);">
               <span class="tag tag-${statusTag}">${statusLabel}</span>
               <span class="text-muted text-sm">${s.wordCount || 0} 字</span>

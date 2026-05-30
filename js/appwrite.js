@@ -29,6 +29,7 @@ const COLLECTIONS = {
   CHATS:        'chats',
   INSPIRATIONS: 'inspirations',
   SETTINGS:     'settings',
+  PROFILES:     'profiles',
 };
 
 // ==================== 占位符检测 ====================
@@ -937,6 +938,69 @@ window.AppwriteAuth = {
   },
 };
 
+// ==================== 用户昵称缓存（profiles 集合） ====================
+const AppwriteProfiles = {
+  /**
+   * 同步当前用户的 profile（登录后/改昵称后调用）
+   */
+  async sync() {
+    if (isPlaceholderConfig()) return;
+    const user = await getCurrentUser().catch(() => null);
+    if (!user) return;
+    try {
+      const db = getDatabases();
+      // 尝试更新已存在的 profile，不存在则创建
+      const name = user.name || user.email || '用户';
+      const avatar = (user.prefs && user.prefs.avatarUrl) || null;
+      await db.updateDocument(APPWRITE_CONFIG.databaseId, COLLECTIONS.PROFILES, user.$id, { name, avatar });
+    } catch (e) {
+      // 文档不存在 → 创建
+      if (e?.code === 404 || String(e?.message || '').includes('not found')) {
+        try {
+          const db = getDatabases();
+          const name = user.name || user.email || '用户';
+          const avatar = (user.prefs && user.prefs.avatarUrl) || null;
+          await db.createDocument(APPWRITE_CONFIG.databaseId, COLLECTIONS.PROFILES, user.$id, { name, avatar });
+        } catch (e2) {
+          console.debug('profiles 集合可能未创建，跳过 profile 同步');
+        }
+      } else {
+        console.debug('profile sync 跳过:', e?.message || e);
+      }
+    }
+  },
+
+  /**
+   * 批量查询用户昵称，返回 Map<userId, name>
+   * 不可用时静默失败，返回空 Map
+   */
+  async batchLookup(userIds) {
+    const names = new Map();
+    if (!userIds || userIds.length === 0) return names;
+    if (isPlaceholderConfig()) return names;
+    try {
+      const db = getDatabases();
+      // Appwrite 不支持 SQL IN，逐批查询（每批最多 100 个）
+      const unique = [...new Set(userIds.filter(Boolean))];
+      for (let i = 0; i < unique.length; i += 100) {
+        const batch = unique.slice(i, i + 100);
+        const docs = await Promise.race([
+          db.listDocuments(APPWRITE_CONFIG.databaseId, COLLECTIONS.PROFILES, [
+            Appwrite.Query.equal('$id', batch),
+          ]),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('lookup 超时')), 3000))
+        ]);
+        for (const d of (docs?.documents || [])) {
+          names.set(d.$id, d.name || '用户');
+        }
+      }
+    } catch (e) {
+      console.debug('profile batchLookup 失败:', e?.message || e);
+    }
+    return names;
+  }
+};
+
 window.AppwriteDB = {
   worlds: AppwriteWorlds,
   characters: AppwriteCharacters,
@@ -957,3 +1021,4 @@ window.AppwriteStorage = {
 
 window.APPWRITE_CONFIG = APPWRITE_CONFIG;
 window.COLLECTIONS = COLLECTIONS;
+window.AppwriteProfiles = AppwriteProfiles;
