@@ -411,13 +411,12 @@
       <div class="modal-body" id="shareModalBody">
         <p class="text-muted text-sm" id="shareWorldName" style="margin-bottom:var(--spacing-md);"></p>
 
-        <!-- 我的信息卡片：显示用户ID供好友使用 -->
+        <!-- 我的信息卡片：复制ID引导 -->
         <div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:14px;border:1px solid var(--border-light);">
-          <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 6px;font-weight:500;">把你的用户 ID 发给好友，让他们在这里填入：</p>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 6px;font-weight:500;">复制自己的ID发给朋友，让ta把你拉入这个宇宙~</p>
           <div style="display:flex;align-items:center;gap:8px;">
-            <code id="myUserIdDisplay" style="flex:1;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:7px 10px;font-size:0.82rem;color:var(--primary-color);word-break:break-all;overflow-wrap:break-word;"></code>
             <button class="btn btn-primary btn-sm" onclick="copyMyUserId()" title="复制到剪贴板" style="white-space:nowrap;padding:6px 10px;font-size:0.8rem;">
-              <i data-lucide="Copy"></i> 复制
+              <i data-lucide="Copy"></i> 复制我的 ID
             </button>
           </div>
         </div>
