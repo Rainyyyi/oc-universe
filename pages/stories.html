@@ -728,6 +728,15 @@
         <div style="display:flex;flex-direction:column;gap:10px;">
           ${worldName ? `<div><span class="text-muted text-sm">所属世界观</span><p style="margin:2px 0 0;"><i data-lucide="Globe" style="width:14px;height:14px;display:inline;vertical-align:-2px;"></i> ${worldName}</p></div>` : ''}
           ${(story.summary || story.description) ? `<div><span class="text-muted text-sm">故事梗概</span><p style="margin:2px 0 0;line-height:1.6;">${escapeHtml(story.summary || story.description)}</p></div>` : ''}
+
+          <!-- 关联角色 -->
+          <div>
+            <span class="text-muted text-sm">关联角色</span>
+            <div id="detailCharList" style="margin-top:4px;">
+              <p class="text-muted text-sm">加载中...</p>
+            </div>
+          </div>
+
           <div><span class="text-muted text-sm">创建时间</span><p style="margin:2px 0 0;" class="text-sm">${story.createdAt ? new Date(story.createdAt).toLocaleString() : '未知'}</p></div>
           <div><span class="text-muted text-sm">最后更新</span><p style="margin:2px 0 0;" class="text-sm">${story.updatedAt ? new Date(story.updatedAt).toLocaleString() : '未知'}</p></div>
         </div>
@@ -736,6 +745,44 @@
       document.getElementById('storyDetailModal').classList.add('active');
 
       try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+
+      // 加载关联角色显示
+      loadDetailCharacters(story);
+    }
+
+    async function loadDetailCharacters(story) {
+      const container = document.getElementById('detailCharList');
+      if (!container) return;
+      let charIds = [];
+      const rawChars = story.characters;
+      if (typeof rawChars === 'string' && rawChars) {
+        charIds = rawChars.split(',').filter(Boolean);
+      } else if (Array.isArray(rawChars)) {
+        charIds = rawChars.filter(Boolean);
+      }
+      if (charIds.length === 0) {
+        container.innerHTML = `<p class="text-muted text-sm">暂无关联角色</p>`;
+        return;
+      }
+      try {
+        const allChars = await OCData.getCharacters();
+        const charMap = {};
+        (allChars || []).forEach(c => { charMap[c.$id || c.id] = c; });
+        container.innerHTML = charIds.map(id => {
+          const c = charMap[id];
+          if (!c) return '';
+          const name = c.name || '未命名';
+          const avatar = c.avatarUrl && !c.avatarUrl.startsWith('data:') && c.avatarUrl.length < 500
+            ? c.avatarUrl : '';
+          return `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg-tertiary);border-radius:20px;margin:2px;font-size:0.85rem;">
+            ${avatar ? `<img src="${avatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">` : '<i data-lucide="User" style="width:14px;height:14px;"></i>'}
+            ${escapeHtml(name)}
+          </span>`;
+        }).join('');
+        try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+      } catch(e) {
+        container.innerHTML = `<p class="text-muted text-sm">${charIds.length} 个关联角色</p>`;
+      }
     }
 
     // 从详情弹窗进入写作模式
@@ -828,6 +875,22 @@
               <textarea class="form-input form-textarea" id="editSummary" rows="3" placeholder="简述故事的主要情节...">${(story.description || story.summary || '').replace(/</g, '&lt;')}</textarea>
             </div>
 
+            <!-- 出场角色 -->
+            <div class="form-group" style="margin-bottom: var(--spacing-md);">
+              <label class="form-label">出场角色</label>
+              <div id="editCharPicker" style="padding: var(--spacing-md); background: var(--bg-tertiary); border-radius: var(--radius-md); min-height: 40px;">
+                <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleEditCharPickList()">
+                  <i data-lucide="ChevronDown" id="editCharChevron" style="width:1rem;height:1rem;transition:transform 0.2s;"></i>
+                  <span class="text-sm" id="editCharHint" style="color:var(--text-muted);">点击展开选择角色...</span>
+                </div>
+                <div id="editCharList" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);max-height:200px;overflow-y:auto;">
+                  <p class="text-muted text-sm">加载中...</p>
+                </div>
+                <div id="editCharTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+              </div>
+              <input type="hidden" id="editCharacterIds" value="">
+            </div>
+
             <!-- 正文编辑区 -->
             <div class="form-group" style="margin-bottom: var(--spacing-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -859,8 +922,88 @@
 
       try { if (window.lucide) lucide.createIcons(); } catch(e) {}
 
+      // 初始化编辑模态框的角色选择器
+      initEditCharPicker(story);
+
       // 保存当前编辑的故事 ID
       _editingStoryId = story.$id || story.id;
+    }
+
+    // ---- 编辑模态框的角色选择器 ----
+    let _editCharLoaded = false;
+
+    async function toggleEditCharPickList() {
+      const list = document.getElementById('editCharList');
+      const chevron = document.getElementById('editCharChevron');
+      if (!list || !chevron) return;
+      const isOpen = list.style.display !== 'none';
+      if (isOpen) { list.style.display = 'none'; chevron.style.transform = ''; return; }
+      list.style.display = 'block';
+      chevron.style.transform = 'rotate(180deg)';
+      if (!_editCharLoaded) { await loadEditCharOptions(); _editCharLoaded = true; }
+    }
+
+    async function loadEditCharOptions() {
+      const container = document.getElementById('editCharList');
+      if (!container) return;
+      let chars;
+      try { chars = await OCData.getCharacters(); } catch (e) { chars = []; }
+      if (!chars || chars.length === 0) {
+        container.innerHTML = `<p class="text-muted text-sm">暂无角色可添加，先去角色页创建吧</p>`;
+        return;
+      }
+      const currentIds = (document.getElementById('editCharacterIds').value || '').split(',').filter(Boolean);
+      container.innerHTML = chars.map(c => {
+        const cid = c.$id || c.id;
+        const checked = currentIds.includes(cid) ? 'checked' : '';
+        return `<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg-primary)'" onmouseout="this.style.background='transparent'">
+          <input type="checkbox" value="${cid}" data-name="${escapeHtml(c.name || '未命名')}" ${checked} onchange="onEditCharPicked(this)">
+          <span style="flex:1;">${escapeHtml(c.name || '未命名')}</span>
+        </label>`;
+      }).join('');
+      try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+    }
+
+    function onEditCharPicked(cb) {
+      const container = document.getElementById('editCharList');
+      if (!container) return;
+      const checked = container.querySelectorAll('input[type="checkbox"]:checked');
+      const ids = []; const names = [];
+      checked.forEach(el => { ids.push(el.value); names.push(el.dataset.name); });
+      document.getElementById('editCharacterIds').value = ids.join(',');
+      const tagContainer = document.getElementById('editCharTags');
+      tagContainer.innerHTML = names.map(n =>
+        `<span class="tag" style="background:var(--primary-color);color:#fff;cursor:default;">${n}</span>`
+      ).join('');
+      const hint = document.getElementById('editCharHint');
+      if (hint) hint.textContent = names.length ? `已选 ${names.length} 个角色` : '点击展开选择角色...';
+    }
+
+    async function initEditCharPicker(story) {
+      // 填充已有角色关联
+      const existingChars = story.characters;
+      let charIds = [];
+      if (typeof existingChars === 'string' && existingChars) {
+        charIds = existingChars.split(',');
+      } else if (Array.isArray(existingChars)) {
+        charIds = existingChars;
+      }
+      document.getElementById('editCharacterIds').value = charIds.join(',');
+
+      // 显示已有角色标签
+      if (charIds.length > 0) {
+        try {
+          const allChars = await OCData.getCharacters();
+          const charMap = {};
+          (allChars || []).forEach(c => { charMap[c.$id || c.id] = c.name || '未命名'; });
+          const names = charIds.map(id => charMap[id] || '未知角色').filter(Boolean);
+          document.getElementById('editCharTags').innerHTML = names.map(n =>
+            `<span class="tag" style="background:var(--primary-color);color:#fff;cursor:default;">${escapeHtml(n)}</span>`
+          ).join('');
+          const hint = document.getElementById('editCharHint');
+          if (hint) hint.textContent = `已选 ${names.length} 个角色`;
+        } catch(e) {}
+      }
     }
 
     let _editingStoryId = null;
@@ -882,6 +1025,7 @@
       const status = document.getElementById('editStatus').value;
       const summary = document.getElementById('editSummary').value.trim();
       const content = document.getElementById('editContent').value;
+      const characterIds = (document.getElementById('editCharacterIds').value || '').split(',').filter(Boolean);
 
       if (!title) { showNotification('请填写标题', 'warning'); return; }
 
@@ -889,7 +1033,8 @@
         await OCData.updateStory(storyId, {
           title, status,
           summary,
-          content, wordCount: content.length
+          content, wordCount: content.length,
+          characters: characterIds
         });
         showNotification('保存成功！', 'success');
         closeStoryEditor();
