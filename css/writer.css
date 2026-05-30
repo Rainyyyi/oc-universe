@@ -642,6 +642,7 @@ body.writer-page {
   display: flex;
   border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
+  overflow: hidden;
 }
 .info-tab {
   flex: 1;

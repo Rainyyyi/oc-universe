@@ -890,17 +890,6 @@
               </div>
               <input type="hidden" id="editCharacterIds" value="">
             </div>
-
-            <!-- 正文编辑区 -->
-            <div class="form-group" style="margin-bottom: var(--spacing-md);">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <label class="form-label" style="margin:0;">正文内容</label>
-                <span class="text-muted text-sm" id="editWordCount">0 字</span>
-              </div>
-              <textarea class="form-input form-textarea" id="editContent"
-                rows="20" style="font-size:1rem;line-height:1.8;min-height:400px;"
-                placeholder="在这里写下你的故事...">${(story.content || '').replace(/</g, '&lt;')}</textarea>
-            </div>
           </div>
           <div class="modal-footer" style="position:sticky;bottom:0;background:var(--bg-secondary);z-index:1;">
             <button class="btn btn-danger" style="margin-right:auto;" onclick="deleteStoryConfirm('${story.$id || story.id}')">
@@ -913,9 +902,7 @@
           </div>
         </div>`;
 
-      // 字数统计
-      updateWordCount();
-      document.getElementById('editContent').addEventListener('input', updateWordCount);
+      // 标题同步到弹窗标题
       document.getElementById('editTitle').addEventListener('input', function() {
         document.getElementById('editorTitle').textContent = this.value || '未命名故事';
       });
@@ -1008,12 +995,6 @@
 
     let _editingStoryId = null;
 
-    function updateWordCount() {
-      const el = document.getElementById('editContent');
-      const countEl = document.getElementById('editWordCount');
-      if (el && countEl) countEl.textContent = el.value.length + ' 字';
-    }
-
     function closeStoryEditor() {
       const m = document.getElementById('storyEditorModal');
       if (m) m.classList.remove('active');
@@ -1024,7 +1005,6 @@
       const title = document.getElementById('editTitle').value.trim();
       const status = document.getElementById('editStatus').value;
       const summary = document.getElementById('editSummary').value.trim();
-      const content = document.getElementById('editContent').value;
       const characterIds = (document.getElementById('editCharacterIds').value || '').split(',').filter(Boolean);
 
       if (!title) { showNotification('请填写标题', 'warning'); return; }
@@ -1033,7 +1013,6 @@
         await OCData.updateStory(storyId, {
           title, status,
           summary,
-          content, wordCount: content.length,
           characters: characterIds
         });
         showNotification('保存成功！', 'success');

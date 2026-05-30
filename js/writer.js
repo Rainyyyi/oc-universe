@@ -119,14 +119,12 @@ async function loadStory() {
   const SETTINGS_KEY = 'oc_story_settings_' + WriterState.storyId;
   try {
     const localSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    if (localSettings.type) WriterState.story.type = localSettings.type;
-    if (localSettings.targetWords) WriterState.targetWords = localSettings.targetWords;
+    if (localSettings.type !== undefined) WriterState.story.type = localSettings.type;
+    if (localSettings.targetWords !== undefined) WriterState.targetWords = localSettings.targetWords;
   } catch(e) {}
 
-  // 设置目标字数（如果有设定的话）
-  if (WriterState.story.targetWords) {
-    WriterState.targetWords = WriterState.story.targetWords;
-  }
+  // 设置目标字数（如果有设定的话）— 优先用 localStorage 的值
+  // （不再从 story 对象读，因为 Appwrite 集合无此字段，只存本地）
 
   // 更新导航栏标题
   const titleEl = document.getElementById('navTitleInput');
@@ -936,7 +934,7 @@ function renderInfoPanel() {
     default: content.innerHTML = renderStatsTab();
   }
 
-  try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+  try { if (window.lucide) lucide.createIcons({ root: content }); } catch(e) {}
   bindSettingsEvents();
 }
 
@@ -1087,7 +1085,7 @@ async function saveStorySettings() {
       WriterState.story.targetWords = targetWords;
       WriterState.story.summary = summary;
     }
-    WriterState.targetWords = targetWords || 50000;
+    WriterState.targetWords = targetWords ?? 50000;
     updateNavStatusTag();
     updateAllStats();
     showToast('设置已保存', 'success');
