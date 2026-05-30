@@ -682,6 +682,7 @@
         <div class="card-stats">
           <span>✦ ${chars.length} 位角色</span>
           <span>✦ ${world.storyCount || 0} 个故事</span>
+          ${(world.collaborators && world.collaborators.length > 0) ? `<span>✦ ${world.collaborators.length} 位协作者</span>` : ''}
         </div>
         <div class="card-hint" style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
           <span>点击进入世界 · 星星即角色</span>
@@ -823,6 +824,7 @@
           <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.8rem;color:rgba(50,70,100,0.5);">
             <span>${w.characterCount||0} 角色</span>
             <span>${w.storyCount||0} 故事</span>
+            ${(w.collaborators && w.collaborators.length > 0) ? `<span>👥 ${w.collaborators.length} 协作者</span>` : ''}
           </div>
         </div>
         <div class="card-footer" style="padding:0.5rem 1rem;border-top:1px solid rgba(120,160,210,0.15);display:flex;justify-content:flex-end;gap:4px;">

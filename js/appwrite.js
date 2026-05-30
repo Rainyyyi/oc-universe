@@ -328,21 +328,9 @@ async function dbListByWorldId(collectionId, worldId) {
     ]);
     return res.documents;
   } catch (e) {
-    // 如果无权限（比如还没给协作者加 read 权限），降级为只查自己的
-    console.warn(`dbListByWorldId 无权访问 ${collectionId} worldId=${worldId}，降级为仅查询自己的数据:`, e.message);
-    try {
-      const fallbackRes = await Promise.race([
-        getDatabases().listDocuments(DB_ID(), collectionId, [
-          ...queries,
-          Appwrite.Query.equal('userId', user.$id),
-        ]),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('降级查询超时')), 8000))
-      ]);
-      return fallbackRes.documents;
-    } catch (e2) {
-      console.warn('降级查询也失败:', e2.message);
-      return [];
-    }
+    // 查询失败（无权限等）→ 返回空，不使用带 userId 的降级（否则协作者看不到别人的数据）
+    console.warn(`dbListByWorldId 查询 ${collectionId} worldId=${worldId} 失败:`, e.message);
+    return [];
   }
 }
 
