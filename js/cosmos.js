@@ -359,91 +359,96 @@
      星球表面纹理生成 —— 每种类型不同的视觉风格
   ======================================================== */
   function _buildPlanetSurface(th, sz, type) {
-    const p = th.primary;
-    const s = th.surface;
-    const d1 = darken(p, 18);
-    const d2 = darken(p, 35);
-    const l1 = lighten(p, 25);
-    const l2 = lighten(p, 50);
+    const p = th.primary; // e.g. #7a38d8
+    const dark  = darken(p, 55);   // 深暗色
+    const mid   = darken(p, 25);   // 中暗色
+    const base  = p;               // 原色
+    const lite  = lighten(p, 40);  // 亮色
+    const xlite = lighten(p, 65);  // 极亮色
 
     let bgStyle = '';
 
     switch (type) {
       case 'fantasy':
-        // 魔法旋流：宽窄交替的对角线条纹，仿佛魔力在流动
+        // 魔法旋流：粗宽对角条纹
         bgStyle = `background:
           repeating-linear-gradient(142deg,
-            transparent 0, transparent 3px,
-            ${s} 3px, ${s} 6px,
-            transparent 6px, transparent 10px,
-            ${l1} 10px, ${l1} 12px,
-            transparent 12px, transparent 15px,
-            ${d1} 15px, ${d1} 19px,
-            transparent 19px, transparent 28px
+            ${dark} 0, ${dark} 4px,
+            transparent 4px, transparent 6px,
+            ${lite} 6px, ${lite} 9px,
+            transparent 9px, transparent 12px,
+            ${mid} 12px, ${mid} 16px,
+            transparent 16px, transparent 18px,
+            ${xlite} 18px, ${xlite} 20px,
+            transparent 20px, transparent 28px
           );`;
         break;
 
       case 'scifi':
-        // 科技环带：水平纬度条纹，粗细有致，如气态巨行星
+        // 科技环带：水平粗纬度条纹
         bgStyle = `background:
           repeating-linear-gradient(0deg,
-            transparent 0, transparent 3px,
-            ${s} 3px, ${s} 6px,
-            transparent 6px, transparent 10px,
-            ${d1} 10px, ${d1} 14px,
-            transparent 14px, transparent 18px,
-            ${l1} 18px, ${l1} 20px,
-            transparent 20px, transparent 23px,
-            ${d2} 23px, ${d2} 26px,
-            transparent 26px, transparent 40px
+            ${dark} 0, ${dark} 4px,
+            transparent 4px, transparent 6px,
+            ${mid} 6px, ${mid} 10px,
+            transparent 10px, transparent 13px,
+            ${lite} 13px, ${lite} 16px,
+            transparent 16px, transparent 18px,
+            ${base} 18px, ${base} 21px,
+            transparent 21px, transparent 24px,
+            ${xlite} 24px, ${xlite} 26px,
+            transparent 26px, transparent 38px
           );`;
         break;
 
       case 'modern':
-        // 生机脉纹：粗宽主条纹 + 细腻暗纹，模拟行星大气层
+        // 生机脉纹：粗浅主纹 + 深暗细纹
         bgStyle = `background:
           repeating-linear-gradient(0deg,
-            transparent 0, transparent 3px,
-            ${l1} 3px, ${l1} 5px,
-            transparent 5px, transparent 16px,
-            ${s} 16px, ${s} 19px,
+            ${xlite} 0, ${xlite} 3px,
+            transparent 3px, transparent 5px,
+            ${dark} 5px, ${dark} 8px,
+            transparent 8px, transparent 16px,
+            ${lite} 16px, ${lite} 19px,
             transparent 19px, transparent 21px,
-            ${d1} 21px, ${d1} 24px,
+            ${mid} 21px, ${mid} 24px,
             transparent 24px, transparent 38px
           );`;
         break;
 
       case 'historical':
-        // 锦绣暗纹：菱形交错的几何纹理，如织锦光泽
+        // 锦绣暗纹：粗菱形交错
         bgStyle = `background:
           repeating-linear-gradient(45deg,
-            transparent 0, transparent 5px,
-            ${s} 5px, ${s} 7px,
-            transparent 7px, transparent 12px
+            ${dark} 0, ${dark} 3px,
+            transparent 3px, transparent 5px,
+            ${lite} 5px, ${lite} 8px,
+            transparent 8px, transparent 12px
           ),
           repeating-linear-gradient(-45deg,
-            transparent 0, transparent 5px,
-            ${d1} 5px, ${d1} 7px,
-            transparent 7px, transparent 12px
+            ${mid} 0, ${mid} 3px,
+            transparent 3px, transparent 7px,
+            ${xlite} 7px, ${xlite} 10px,
+            transparent 10px, transparent 12px
           );`;
         break;
 
       case 'other':
       default:
-        // 星尘斑点：大小不一的圆形斑点随机散布
+        // 星尘斑点：大号醒目斑点
         bgStyle = `background:
-          radial-gradient(circle at 18% 28%, ${l2} 3px, transparent 4px),
-          radial-gradient(circle at 62% 22%, ${d1} 5px, transparent 6px),
-          radial-gradient(circle at 38% 52%, ${s} 3px, transparent 4px),
-          radial-gradient(circle at 72% 58%, ${l1} 5px, transparent 6px),
-          radial-gradient(circle at 28% 68%, ${d2} 6px, transparent 7px),
-          radial-gradient(circle at 55% 72%, ${s} 3px, transparent 4px),
-          radial-gradient(circle at 78% 38%, ${d1} 5px, transparent 6px),
-          radial-gradient(circle at 22% 46%, ${l1} 4px, transparent 5px),
-          radial-gradient(circle at 48% 18%, ${l2} 3px, transparent 4px),
-          radial-gradient(circle at 68% 78%, ${s} 5px, transparent 6px),
-          radial-gradient(circle at 32% 82%, ${d1} 3px, transparent 4px),
-          radial-gradient(circle at 82% 14%, ${l1} 4px, transparent 5px);
+          radial-gradient(circle at 18% 28%, ${xlite} 4px, transparent 5px),
+          radial-gradient(circle at 62% 22%, ${dark} 7px, transparent 8px),
+          radial-gradient(circle at 38% 52%, ${lite} 5px, transparent 6px),
+          radial-gradient(circle at 72% 58%, ${base} 7px, transparent 8px),
+          radial-gradient(circle at 28% 68%, ${mid} 8px, transparent 9px),
+          radial-gradient(circle at 55% 72%, ${xlite} 4px, transparent 5px),
+          radial-gradient(circle at 78% 38%, ${dark} 6px, transparent 7px),
+          radial-gradient(circle at 22% 46%, ${lite} 5px, transparent 6px),
+          radial-gradient(circle at 48% 18%, ${mid} 4px, transparent 5px),
+          radial-gradient(circle at 68% 78%, ${xlite} 6px, transparent 7px),
+          radial-gradient(circle at 32% 82%, ${dark} 5px, transparent 6px),
+          radial-gradient(circle at 82% 14%, ${base} 5px, transparent 6px);
           background-color: transparent;`;
         break;
     }
