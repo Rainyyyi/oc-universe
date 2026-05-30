@@ -597,7 +597,7 @@
       if (window._pendingAvatarFile) {
         try {
           showNotification('正在上传头像...', 'info');
-          const result = await API.uploadFile(window._pendingAvatarFile, true);
+          const result = await API.upload(window._pendingAvatarFile, true);
           avatarUrl = result.url;
         } catch (uploadErr) {
           console.error('头像上传失败:', uploadErr);
@@ -744,7 +744,7 @@
       if (window._pendingAvatarFile) {
         try {
           showNotification('正在上传头像...', 'info');
-          const result = await API.uploadFile(window._pendingAvatarFile, true);
+          const result = await API.upload(window._pendingAvatarFile, true);
           avatarUrl = result.url;
         } catch (uploadErr) {
           console.error('头像上传失败:', uploadErr);

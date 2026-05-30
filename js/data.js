@@ -385,7 +385,7 @@ function isCloudUnavailableError(err) {
   const status = err.code || err.status || err.response?.status || 0;
   const msg = (err.message || err.type || '').toLowerCase();
   return (
-    status === 401 || status === 403 || status === 400 ||
+    status === 401 || status === 403 || status === 0 ||
     msg.includes('unauthorized') ||
     msg.includes('forbidden') ||
     msg.includes('not authorized') ||
@@ -444,6 +444,12 @@ async function withCloudFallback(cloudFn, localFn, ...args) {
   try {
     return await cloudFn(...args);
   } catch (err) {
+    const msg = (err.message || err.type || '').toLowerCase();
+    if (msg.includes('avatarurl') && msg.includes('longer than')) {
+      // 旧数据 avatarUrl 超长（base64），需手动清理
+      console.error('❌ 数据库中存在 base64 头像数据导致查询失败。请去 Appwrite 控制台 → Database → Characters → 将 avatarUrl 过长的记录清空或删除。');
+      throw new Error('数据库中旧角色头像数据过长，请清理后刷新页面。详见控制台提示。');
+    }
     if (isCloudUnavailableError(err)) {
       // 云端不可用，标记为本地模式（后续调用不再尝试云端）
       if (_useCloud) {

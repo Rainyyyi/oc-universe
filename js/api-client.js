@@ -37,6 +37,12 @@ function normalize(doc) {
   } else if (!Array.isArray(result.collaborators)) {
     result.collaborators = [];
   }
+  // 兼容旧数据：base64 头像 URL 超长，清空避免服务端 400
+  if (result.avatarUrl && typeof result.avatarUrl === 'string') {
+    if (result.avatarUrl.length > 500 || result.avatarUrl.startsWith('data:image')) {
+      result.avatarUrl = null;
+    }
+  }
   return result;
 }
 
