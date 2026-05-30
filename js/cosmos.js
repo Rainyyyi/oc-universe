@@ -683,7 +683,12 @@
           <span>✦ ${chars.length} 位角色</span>
           <span>✦ ${world.storyCount || 0} 个故事</span>
         </div>
-        <div class="card-hint">点击进入世界 · 星星即角色</div>
+        <div class="card-hint" style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+          <span>点击进入世界 · 星星即角色</span>
+          <button class="btn btn-ghost btn-sm btn-icon" title="协作" onclick="event.stopPropagation();showShareModal('${world.$id||world.id}','${escHtml(world.name).replace(/'/g,"\\'")}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
+        </div>
       `;
       this.hoverCard.classList.add('visible');
     },
@@ -821,6 +826,9 @@
           </div>
         </div>
         <div class="card-footer" style="padding:0.5rem 1rem;border-top:1px solid rgba(120,160,210,0.15);display:flex;justify-content:flex-end;gap:4px;">
+          <button class="btn btn-ghost btn-sm btn-icon" title="协作" onclick="event.stopPropagation();showShareModal('${w.$id||w.id}','${escHtml(w.name).replace(/'/g,"\\'")}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
           <button class="btn btn-ghost btn-sm btn-icon" title="编辑" onclick="event.stopPropagation();editWorld('${w.$id||w.id}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
