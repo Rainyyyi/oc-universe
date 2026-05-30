@@ -234,22 +234,8 @@ body.cosmos-mode .worlds-section > .flex.justify-between {
   z-index: 3;
 }
 
-/* 星球纹理条纹 */
-.planet-surface {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  opacity: 0.85;
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* 不同类型旋转速度不同，营造各自在转的错觉 */
-.planet-surface--fantasy    { animation: planet-rotate 18s linear infinite; }
-.planet-surface--scifi      { animation: planet-rotate 28s linear infinite reverse; }
-.planet-surface--modern     { animation: planet-rotate 22s linear infinite; }
-.planet-surface--historical { animation: planet-rotate 32s linear infinite; }
-.planet-surface--other      { animation: planet-rotate 20s linear infinite reverse; }
+/* 星球纹理条纹 —— 已通过 background 层叠实现在 planet-core 上 */
+/* 旋转 keyframes 供 planet-wrap 内联动画使用 */
 
 @keyframes planet-rotate {
   from { transform: rotate(0deg); }

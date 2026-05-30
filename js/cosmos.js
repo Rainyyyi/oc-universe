@@ -356,100 +356,79 @@
      世界观行星（不带badge数字）
   ======================================================== */
   /* ========================================================
-     星球表面纹理生成 —— 每种类型不同的视觉风格
+     星球纹理 —— 返回 background-image 字符串，直接叠在 core 上
   ======================================================== */
-  function _buildPlanetSurface(th, sz, type) {
+  function _buildPlanetTexture(th, type) {
     const p = th.primary;
-    // 用白+极暗做最大对比，不再是同色系微调
-    const white = 'rgba(255,255,255,0.7)';
-    const black = 'rgba(0,0,0,0.45)';
-    const tint  = lighten(p, 55);
-    const shade = darken(p, 60);
-
-    let bgStyle = '';
+    const white = 'rgba(255,255,255,0.72)';
+    const black = 'rgba(0,0,0,0.42)';
+    const tint  = lighten(p, 58);
+    const shade = darken(p, 62);
 
     switch (type) {
       case 'fantasy':
-        // 魔法旋流：白+暗交替对角宽带
-        bgStyle = `background:
-          repeating-linear-gradient(142deg,
-            ${white} 0px, ${white} 6px,
-            ${shade} 6px, ${shade} 12px,
-            ${tint} 12px, ${tint} 16px,
-            ${black} 16px, ${black} 20px,
-            transparent 20px, transparent 24px,
-            ${white} 24px, ${white} 28px,
-            transparent 28px, transparent 36px
-          );`;
-        break;
-
+        return `repeating-linear-gradient(142deg,
+          ${white} 0px, ${white} 7px,
+          ${shade} 7px, ${shade} 14px,
+          ${tint} 14px, ${tint} 18px,
+          ${black} 18px, ${black} 22px,
+          transparent 22px, transparent 26px,
+          ${white} 26px, ${white} 30px,
+          transparent 30px, transparent 40px)`;
       case 'scifi':
-        // 科技环带：白/黑水平纬度宽带（木星风格）
-        bgStyle = `background:
-          repeating-linear-gradient(0deg,
-            ${white} 0px, ${white} 4px,
-            ${shade} 4px, ${shade} 10px,
-            transparent 10px, transparent 14px,
-            ${tint} 14px, ${tint} 18px,
-            ${black} 18px, ${black} 24px,
-            transparent 24px, transparent 28px,
-            ${white} 28px, ${white} 32px,
-            transparent 32px, transparent 40px
-          );`;
-        break;
-
+        return `repeating-linear-gradient(0deg,
+          ${white} 0px, ${white} 5px,
+          ${shade} 5px, ${shade} 12px,
+          transparent 12px, transparent 14px,
+          ${tint} 14px, ${tint} 18px,
+          ${black} 18px, ${black} 26px,
+          transparent 26px, transparent 30px,
+          ${white} 30px, ${white} 34px,
+          transparent 34px, transparent 44px)`;
       case 'modern':
-        // 生机脉纹：浅色主带+深色细纹交替
-        bgStyle = `background:
-          repeating-linear-gradient(0deg,
-            ${tint} 0px, ${tint} 6px,
-            ${black} 6px, ${black} 10px,
-            transparent 10px, transparent 14px,
-            ${white} 14px, ${white} 18px,
-            ${shade} 18px, ${shade} 22px,
-            transparent 22px, transparent 28px,
-            ${tint} 28px, ${tint} 34px,
-            transparent 34px, transparent 42px
-          );`;
-        break;
-
+        return `repeating-linear-gradient(0deg,
+          ${tint} 0px, ${tint} 7px,
+          ${black} 7px, ${black} 11px,
+          transparent 11px, transparent 15px,
+          ${white} 15px, ${white} 19px,
+          ${shade} 19px, ${shade} 23px,
+          transparent 23px, transparent 30px,
+          ${tint} 30px, ${tint} 36px,
+          transparent 36px, transparent 46px)`;
       case 'historical':
-        // 锦绣纹：粗菱形交叉
-        bgStyle = `background:
-          repeating-linear-gradient(45deg,
-            ${white} 0px, ${white} 5px,
-            ${shade} 5px, ${shade} 10px,
-            transparent 10px, transparent 14px
-          ),
-          repeating-linear-gradient(-45deg,
-            ${tint} 0px, ${tint} 4px,
-            ${black} 4px, ${black} 9px,
-            transparent 9px, transparent 14px
-          );`;
-        break;
-
+        return `repeating-linear-gradient(45deg,
+          ${white} 0px, ${white} 6px,
+          ${shade} 6px, ${shade} 12px,
+          transparent 12px, transparent 16px),
+        repeating-linear-gradient(-45deg,
+          ${tint} 0px, ${tint} 5px,
+          ${black} 5px, ${black} 11px,
+          transparent 11px, transparent 16px)`;
       case 'other':
       default:
-        // 星尘斑点：大号醒目圆斑
-        bgStyle = `background:
-          radial-gradient(circle at 15% 25%, ${white} 6px, transparent 7px),
-          radial-gradient(circle at 65% 18%, ${shade} 9px, transparent 10px),
-          radial-gradient(circle at 35% 55%, ${tint} 7px, transparent 8px),
-          radial-gradient(circle at 75% 60%, ${black} 8px, transparent 9px),
-          radial-gradient(circle at 22% 72%, ${white} 5px, transparent 6px),
-          radial-gradient(circle at 58% 78%, ${shade} 7px, transparent 8px),
-          radial-gradient(circle at 80% 38%, ${tint} 6px, transparent 7px),
-          radial-gradient(circle at 18% 48%, ${black} 5px, transparent 6px),
-          radial-gradient(circle at 50% 15%, ${white} 6px, transparent 7px),
-          radial-gradient(circle at 70% 82%, ${shade} 8px, transparent 9px),
-          radial-gradient(circle at 28% 85%, ${tint} 5px, transparent 6px),
-          radial-gradient(circle at 85% 12%, ${white} 6px, transparent 7px);
-          background-color: transparent;`;
-        break;
+        return `radial-gradient(circle at 15% 25%, ${white} 7px, transparent 8px),
+        radial-gradient(circle at 65% 18%, ${shade} 10px, transparent 11px),
+        radial-gradient(circle at 35% 55%, ${tint} 8px, transparent 9px),
+        radial-gradient(circle at 75% 60%, ${black} 9px, transparent 10px),
+        radial-gradient(circle at 22% 72%, ${white} 6px, transparent 7px),
+        radial-gradient(circle at 58% 78%, ${shade} 8px, transparent 9px),
+        radial-gradient(circle at 80% 38%, ${tint} 7px, transparent 8px),
+        radial-gradient(circle at 18% 48%, ${black} 6px, transparent 7px),
+        radial-gradient(circle at 50% 15%, ${white} 7px, transparent 8px),
+        radial-gradient(circle at 70% 82%, ${shade} 9px, transparent 10px),
+        radial-gradient(circle at 28% 85%, ${tint} 6px, transparent 7px),
+        radial-gradient(circle at 85% 12%, ${white} 7px, transparent 8px)`;
     }
-
-    return `<div class="planet-surface planet-surface--${type}" style="${bgStyle}"></div>`;
   }
+
+  // 各世界观类型 → 旋转速度/方向
+  const PLANET_ROTATE = {
+    fantasy:    'animation:planet-rotate 18s linear infinite',
+    scifi:      'animation:planet-rotate 28s linear infinite reverse',
+    modern:     'animation:planet-rotate 22s linear infinite',
+    historical: 'animation:planet-rotate 32s linear infinite',
+    other:      'animation:planet-rotate 20s linear infinite reverse',
+  };
 
   class WorldPlanet {
     constructor({ world, x, y, chars, stage, onDetail, orbitEls }) {
@@ -484,18 +463,22 @@
       el.className = `world-planet ${th.cls}`;
       el.style.cssText = `left:${this.cx}px;top:${this.cy}px;`;
 
-      const surfaceHTML = _buildPlanetSurface(th, sz, w.type);
-      el.innerHTML = `
-        <div class="planet-wrap">
-          <div class="planet-glow" style="width:${sz*1.9}px;height:${sz*1.9}px;background:${th.glow};"></div>
-          <div class="planet-core" style="
-            width:${sz}px;height:${sz}px;
-            background:radial-gradient(circle at 35% 32%,
+      const texBG  = _buildPlanetTexture(th, w.type);
+      const rotAnim = PLANET_ROTATE[w.type] || PLANET_ROTATE.other;
+      // 纹理叠在星球底色上面：逗号分隔，第一个在顶层
+      const bg = `${texBG},
+            radial-gradient(circle at 35% 32%,
               ${lighten(th.primary, 40)} 0%,
               ${th.primary} 42%,
               ${darken(th.primary, 22)} 80%,
               ${darken(th.primary, 42)} 100%
-            );
+            )`;
+      el.innerHTML = `
+        <div class="planet-wrap" style="${rotAnim};">
+          <div class="planet-glow" style="width:${sz*1.9}px;height:${sz*1.9}px;background:${th.glow};"></div>
+          <div class="planet-core" style="
+            width:${sz}px;height:${sz}px;
+            background:${bg};
             --planet-glow:${th.glow};
             box-shadow:
               inset -5px -5px 14px rgba(0,0,0,0.35),
@@ -503,7 +486,6 @@
               0 0 20px ${th.glow},
               0 0 50px ${th.glow.replace('0.55','0.2').replace('0.5','0.18')};
           ">
-            ${surfaceHTML}
           </div>
         </div>
         <div class="planet-label">${escHtml(w.name)}</div>
