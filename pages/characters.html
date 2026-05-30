@@ -444,12 +444,14 @@
       renderCategoryPills();
       await loadCharacters();
 
-      // 头像预览
+      // 头像预览 + 保存原始文件引用（用于上传Storage）
       const avatarInput = document.getElementById('avatarInput');
       if (avatarInput) {
         avatarInput.addEventListener('change', function(e) {
           const file = e.target.files[0];
           if (!file) return;
+          // 保存文件引用，提交时上传到Storage
+          window._pendingAvatarFile = file;
           const reader = new FileReader();
           reader.onload = function(ev) {
             document.getElementById('avatarPreview').src = ev.target.result;
@@ -590,6 +592,21 @@
       if (!name) { alert('请输入角色名称'); return; }
       if (!worldId) { alert('请选择所属世界观'); return; }
 
+      // 头像：有新选文件则上传到Storage，否则用已有URL或null
+      let avatarUrl = null;
+      if (window._pendingAvatarFile) {
+        try {
+          showNotification('正在上传头像...', 'info');
+          const result = await API.uploadFile(window._pendingAvatarFile, true);
+          avatarUrl = result.url;
+        } catch (uploadErr) {
+          console.error('头像上传失败:', uploadErr);
+          showNotification('头像上传失败，将使用默认头像', 'warning');
+        }
+      } else if (avatarPreview && !avatarPreview.src.includes('dicebear')) {
+        avatarUrl = avatarPreview.src;
+      }
+
       const data = {
         worldId: worldId,
         name: name,
@@ -598,12 +615,12 @@
         tags: tagsStr ? tagsStr.split(/[,，]/).map(t => t.trim()).filter(Boolean) : [],
         description: description,
         personality: description,
-        avatarUrl: avatarPreview && !avatarPreview.src.includes('dicebear')
-          ? avatarPreview.src : null,
+        avatarUrl: avatarUrl,
       };
 
       try {
         await OCData.createCharacter(data);
+        window._pendingAvatarFile = null;
         showNotification('角色创建成功！', 'success');
         closeModal('createCharacterModal');
         // 清空表单 + 重置编辑状态
@@ -696,7 +713,10 @@
 
     function resetCharacterForm() {
       _editingCharId = null;
+      window._pendingAvatarFile = null;
       document.getElementById('createCharacterForm').reset();
+      const avatarInput = document.getElementById('avatarInput');
+      if (avatarInput) avatarInput.value = '';
       const avatarPreview = document.getElementById('avatarPreview');
       if (avatarPreview) avatarPreview.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
       const modalTitle = document.querySelector('#createCharacterModal .modal-title');
@@ -719,6 +739,23 @@
 
       if (!name) { showNotification('请输入角色名称', 'warning'); return; }
 
+      // 头像：有新选文件则上传到Storage，否则用已有URL或null
+      let avatarUrl = null;
+      if (window._pendingAvatarFile) {
+        try {
+          showNotification('正在上传头像...', 'info');
+          const result = await API.uploadFile(window._pendingAvatarFile, true);
+          avatarUrl = result.url;
+        } catch (uploadErr) {
+          console.error('头像上传失败:', uploadErr);
+          showNotification('头像上传失败，保留原头像', 'warning');
+          // 保留原头像URL
+          avatarUrl = avatarPreview && !avatarPreview.src.includes('dicebear') ? avatarPreview.src : null;
+        }
+      } else if (avatarPreview && !avatarPreview.src.includes('dicebear')) {
+        avatarUrl = avatarPreview.src;
+      }
+
       const data = {
         name,
         age: age || '',
@@ -726,8 +763,7 @@
         tags: tagsStr ? tagsStr.split(/[,，]/).map(t => t.trim()).filter(Boolean) : [],
         description,
         personality: description,
-        avatarUrl: avatarPreview && !avatarPreview.src.includes('dicebear')
-          ? avatarPreview.src : null,
+        avatarUrl: avatarUrl,
       };
 
       try {
@@ -735,6 +771,7 @@
           OCData.updateCharacter(_editingCharId, data),
           new Promise((_, reject) => setTimeout(() => reject(new Error('保存超时')), 10000))
         ]);
+        window._pendingAvatarFile = null;
         closeModal('createCharacterModal');
         resetCharacterForm();
         showNotification('修改已保存', 'success');
