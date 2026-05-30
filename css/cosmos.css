@@ -1,0 +1,769 @@
+/* 🌌 OC宇宙 - 宇宙星图主题 */
+
+/* ==================== 星空背景画布 ==================== */
+#cosmos-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ==================== 宇宙主页整体 ==================== */
+body.cosmos-mode {
+  background: #020817 !important;
+  overflow-x: hidden;
+}
+
+body.cosmos-mode .navbar {
+  background: rgba(2, 8, 23, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.15) !important;
+  box-shadow: 0 1px 30px rgba(59, 130, 246, 0.08) !important;
+}
+
+body.cosmos-mode .navbar-brand {
+  background: linear-gradient(135deg, #93C5FD 0%, #818CF8 50%, #C4B5FD 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body.cosmos-mode .navbar-menu a {
+  color: rgba(148, 163, 184, 0.9);
+}
+body.cosmos-mode .navbar-menu a:hover,
+body.cosmos-mode .navbar-menu a.active {
+  color: #93C5FD;
+  background: rgba(96, 165, 250, 0.1);
+}
+
+body.cosmos-mode .sidebar {
+  background: rgba(5, 15, 35, 0.85) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(96, 165, 250, 0.12) !important;
+}
+
+body.cosmos-mode .sidebar-nav-item {
+  color: rgba(148, 163, 184, 0.8);
+}
+body.cosmos-mode .sidebar-nav-item:hover,
+body.cosmos-mode .sidebar-nav-item.active {
+  background: rgba(96, 165, 250, 0.12);
+  color: #93C5FD;
+}
+
+body.cosmos-mode .form-input {
+  background: rgba(15, 25, 50, 0.8);
+  border-color: rgba(96, 165, 250, 0.2);
+  color: #E2E8F0;
+}
+body.cosmos-mode .form-input:focus {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+/* ==================== 主内容区 ==================== */
+body.cosmos-mode .main-content {
+  background: transparent !important;
+  position: relative;
+  z-index: 1;
+}
+
+body.cosmos-mode .page-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.1) !important;
+  padding: 1.5rem 2rem;
+}
+body.cosmos-mode .page-header h1 {
+  color: #E2E8F0;
+}
+body.cosmos-mode .breadcrumb,
+body.cosmos-mode .breadcrumb a,
+body.cosmos-mode .breadcrumb span {
+  color: rgba(148, 163, 184, 0.7);
+}
+
+/* ==================== 宇宙星图容器 ==================== */
+.cosmos-view {
+  position: relative;
+  min-height: calc(100vh - 160px);
+  overflow: hidden;
+  padding: 2rem;
+}
+
+/* 标题横幅 */
+.cosmos-banner {
+  text-align: center;
+  padding: 3rem 0 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.cosmos-banner h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #93C5FD 0%, #C4B5FD 50%, #F0ABFC 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.cosmos-banner p {
+  color: rgba(148, 163, 184, 0.7);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* ==================== 星图 SVG 舞台 ==================== */
+.cosmos-stage {
+  position: relative;
+  width: 100%;
+  min-height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==================== 世界观星球 ==================== */
+.world-planet {
+  position: absolute;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  transition: transform 0.3s ease;
+}
+
+.world-planet:hover {
+  z-index: 20;
+}
+
+.world-planet:hover .planet-core {
+  transform: scale(1.15);
+}
+
+.world-planet:hover .planet-ring {
+  opacity: 0.8;
+}
+
+.planet-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planet-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.35;
+  pointer-events: none;
+  animation: planet-pulse 4s ease-in-out infinite;
+}
+
+@keyframes planet-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+.planet-core {
+  position: relative;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow:
+    inset -4px -4px 12px rgba(0,0,0,0.4),
+    inset 3px 3px 8px rgba(255,255,255,0.15),
+    0 0 20px var(--planet-color, #3B82F6),
+    0 0 60px rgba(59,130,246,0.2);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.planet-core::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  width: 35%;
+  height: 30%;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  filter: blur(4px);
+}
+
+.planet-surface {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation: planet-rotate 20s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes planet-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.planet-label {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #E2E8F0;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.world-planet:hover .planet-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 角色数量徽标 */
+.planet-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #F59E0B, #F97316);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 3;
+  border: 1.5px solid rgba(2,8,23,0.8);
+}
+
+/* ==================== 轨道 ==================== */
+.orbit-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(96, 165, 250, 0.12);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+  animation: orbit-shimmer 8s ease-in-out infinite;
+}
+
+@keyframes orbit-shimmer {
+  0%, 100% { border-color: rgba(96, 165, 250, 0.08); }
+  50% { border-color: rgba(96, 165, 250, 0.2); }
+}
+
+/* ==================== OC 星星粒子 ==================== */
+.oc-star {
+  position: absolute;
+  border-radius: 50%;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.3s ease;
+  z-index: 15;
+}
+
+.oc-star:hover {
+  z-index: 25;
+}
+
+.oc-star .star-dot {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.oc-star:hover .star-dot {
+  transform: scale(2.5);
+  box-shadow: 0 0 16px var(--star-color, #93C5FD), 0 0 32px rgba(147, 197, 253, 0.4) !important;
+}
+
+.oc-star .star-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(5, 15, 35, 0.92);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 8px;
+  padding: 6px 10px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: #E2E8F0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.oc-star:hover .star-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.star-tooltip strong {
+  display: block;
+  color: #93C5FD;
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+
+/* ==================== 星球颜色方案 ==================== */
+/* 按世界观类型 */
+.planet-fantasy  { --planet-color: #A855F7; }
+.planet-scifi    { --planet-color: #3B82F6; }
+.planet-modern   { --planet-color: #10B981; }
+.planet-historical { --planet-color: #F59E0B; }
+.planet-other    { --planet-color: #EC4899; }
+
+/* ==================== 世界观详情悬浮卡片 ==================== */
+.world-hover-card {
+  position: fixed;
+  background: rgba(5, 15, 40, 0.95);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 16px;
+  padding: 16px 20px;
+  min-width: 220px;
+  max-width: 280px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1000;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(96,165,250,0.1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(4px);
+}
+
+.world-hover-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.world-hover-card .card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #E2E8F0;
+  margin: 0 0 6px;
+}
+
+.world-hover-card .card-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.world-hover-card .tag {
+  background: rgba(96, 165, 250, 0.15);
+  color: #93C5FD;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.world-hover-card .card-desc {
+  font-size: 0.8rem;
+  color: rgba(148, 163, 184, 0.8);
+  line-height: 1.6;
+  margin: 0 0 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.world-hover-card .card-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.world-hover-card .card-hint {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(96, 165, 250, 0.1);
+  font-size: 0.72rem;
+  color: rgba(96, 165, 250, 0.6);
+  text-align: center;
+}
+
+/* ==================== 创建世界观占位（流浪星球） ==================== */
+.planet-add {
+  position: absolute;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px dashed rgba(96, 165, 250, 0.3);
+  color: rgba(96, 165, 250, 0.5);
+  font-size: 1.5rem;
+  transition: all 0.3s ease;
+  animation: float-drift 6s ease-in-out infinite;
+}
+
+.planet-add:hover {
+  border-color: rgba(96, 165, 250, 0.8);
+  color: #93C5FD;
+  background: rgba(96, 165, 250, 0.08);
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
+}
+
+.planet-add-label {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: rgba(96, 165, 250, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.planet-add:hover .planet-add-label {
+  opacity: 1;
+}
+
+/* ==================== 空状态：初始宇宙 ==================== */
+.cosmos-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.cosmos-empty .nebula-ring {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 1px dashed rgba(96, 165, 250, 0.2);
+  margin: 0 auto 2rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: nebula-rotate 30s linear infinite;
+}
+
+@keyframes nebula-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cosmos-empty .nebula-ring::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  border: 1px dashed rgba(96, 165, 250, 0.1);
+}
+
+.cosmos-empty .nebula-ring::after {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  border: 1px dashed rgba(96, 165, 250, 0.15);
+}
+
+.cosmos-empty .nebula-core {
+  font-size: 3rem;
+  color: rgba(96, 165, 250, 0.4);
+  animation: nebula-rotate-reverse 30s linear infinite;
+}
+
+@keyframes nebula-rotate-reverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+.cosmos-empty h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #93C5FD;
+  margin: 0 0 0.75rem;
+}
+
+.cosmos-empty p {
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+.cosmos-empty-actions {
+  pointer-events: all;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ==================== 工具栏 ==================== */
+.cosmos-toolbar {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 50;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cosmos-toolbar .tb-btn {
+  background: rgba(5, 15, 35, 0.8);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 8px;
+  color: rgba(148, 163, 184, 0.8);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.cosmos-toolbar .tb-btn:hover {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #93C5FD;
+}
+
+/* ==================== 浮动动画 ==================== */
+@keyframes float-drift {
+  0%, 100% { transform: translate(-50%, calc(-50% + 0px)); }
+  33%       { transform: translate(-50%, calc(-50% - 8px)); }
+  66%       { transform: translate(-50%, calc(-50% + 5px)); }
+}
+
+/* ==================== 按钮宇宙风格 ==================== */
+body.cosmos-mode .btn-primary {
+  background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+  color: #fff;
+}
+
+body.cosmos-mode .btn-primary:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+  box-shadow: 0 6px 20px rgba(59,130,246,0.4);
+  transform: translateY(-1px);
+}
+
+body.cosmos-mode .btn-secondary {
+  background: rgba(15, 30, 60, 0.8);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  color: #93C5FD;
+}
+
+body.cosmos-mode .btn-secondary:hover {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+/* ==================== 模态框宇宙风 ==================== */
+body.cosmos-mode .modal {
+  background: rgba(5, 15, 40, 0.97) !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(96,165,250,0.1) !important;
+}
+
+body.cosmos-mode .modal-header {
+  border-bottom-color: rgba(96, 165, 250, 0.15) !important;
+}
+
+body.cosmos-mode .modal-footer {
+  border-top-color: rgba(96, 165, 250, 0.15) !important;
+}
+
+body.cosmos-mode .modal-title {
+  color: #E2E8F0 !important;
+}
+
+body.cosmos-mode .modal-overlay {
+  background: rgba(0, 5, 20, 0.7) !important;
+  backdrop-filter: blur(4px);
+}
+
+body.cosmos-mode .form-label {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+body.cosmos-mode .form-input option {
+  background: #050F23;
+  color: #E2E8F0;
+}
+
+/* 世界观卡片（传统网格视图备用） */
+body.cosmos-mode .card {
+  background: rgba(5, 15, 40, 0.7) !important;
+  border: 1px solid rgba(96, 165, 250, 0.15) !important;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease !important;
+}
+
+body.cosmos-mode .card:hover {
+  border-color: rgba(96, 165, 250, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(59,130,246,0.15), 0 0 0 1px rgba(96,165,250,0.2) !important;
+  transform: translateY(-4px) !important;
+}
+
+body.cosmos-mode .card h3 {
+  color: #E2E8F0 !important;
+}
+
+body.cosmos-mode .badge {
+  background: rgba(96, 165, 250, 0.15) !important;
+  color: #93C5FD !important;
+  border: 1px solid rgba(96, 165, 250, 0.2) !important;
+}
+
+body.cosmos-mode .badge-secondary {
+  background: rgba(167, 139, 250, 0.15) !important;
+  color: #C4B5FD !important;
+  border: 1px solid rgba(167, 139, 250, 0.2) !important;
+}
+
+/* 通知 */
+body.cosmos-mode .notification {
+  background: rgba(5, 15, 40, 0.95) !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+  backdrop-filter: blur(12px);
+}
+
+/* ==================== 视图切换按钮 ==================== */
+.view-switch {
+  display: flex;
+  gap: 4px;
+  background: rgba(5, 15, 35, 0.6);
+  border: 1px solid rgba(96, 165, 250, 0.15);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.view-switch .vsw-btn {
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: rgba(148, 163, 184, 0.6);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.view-switch .vsw-btn:hover {
+  color: #93C5FD;
+}
+
+.view-switch .vsw-btn.active {
+  background: rgba(96, 165, 250, 0.15);
+  color: #93C5FD;
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 768px) {
+  .cosmos-stage {
+    min-height: 500px;
+    overflow: visible;
+  }
+
+  .world-planet:hover .planet-label {
+    display: none;
+  }
+
+  .cosmos-banner h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ==================== 连接线（世界观-OC关联） ==================== */
+.cosmos-connection {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+  stroke: rgba(96, 165, 250, 0.06);
+  stroke-width: 1;
+  fill: none;
+}
+
+/* 滚动条宇宙风格 */
+body.cosmos-mode ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+body.cosmos-mode ::-webkit-scrollbar-track {
+  background: rgba(5, 15, 35, 0.5);
+}
+
+body.cosmos-mode ::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.25);
+  border-radius: 3px;
+}
+
+body.cosmos-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(96, 165, 250, 0.4);
+}
+
+/* 数量统计文字 */
+body.cosmos-mode .text-muted {
+  color: rgba(148, 163, 184, 0.6) !important;
+}
+
+/* 空状态引导页宇宙风格 */
+body.cosmos-mode .characters-empty-guide {
+  background: transparent !important;
+}
+
+body.cosmos-mode .empty-guide-header h3 {
+  color: #93C5FD !important;
+}
+
+body.cosmos-mode .guide-step {
+  background: rgba(5, 15, 40, 0.7) !important;
+  border: 1px solid rgba(96, 165, 250, 0.15) !important;
+}
+
+body.cosmos-mode .guide-step h4 {
+  color: #E2E8F0 !important;
+}
+
+/* 侧边栏文字 */
+body.cosmos-mode .sidebar-section-title {
+  color: rgba(96, 165, 250, 0.5) !important;
+}
