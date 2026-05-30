@@ -323,6 +323,21 @@
             <label class="form-label">简介描述</label>
             <textarea class="form-input form-textarea" id="editWorldDesc" placeholder="描述这个世界观的基本设定..."></textarea>
           </div>
+          <div class="form-group">
+            <label class="form-label">封面图片</label>
+            <input type="hidden" id="editWorldCoverFileId" value="">
+            <div id="editCoverDropZone" style="border:2px dashed var(--border-color);border-radius:var(--radius-md);padding:var(--spacing-lg);text-align:center;cursor:pointer;position:relative;">
+              <input type="file" id="editWorldCoverInput" accept="image/*" style="display:none;">
+              <div id="editCoverPlaceholder">
+                <i data-lucide="CloudUpload" style="font-size:2rem;color:var(--text-muted);margin-bottom:var(--spacing-sm);"></i>
+                <p class="text-muted text-sm">点击或拖拽上传新封面</p>
+              </div>
+              <div id="editCoverPreview" style="display:none;position:relative;">
+                <img id="editCoverImg" src="" alt="封面预览" style="max-width:100%;max-height:160px;border-radius:var(--radius-sm);object-fit:cover;">
+                <button type="button" onclick="removeEditCover()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -498,6 +513,30 @@
 
       // 加载世界观
       await loadWorlds();
+
+      // 编辑封面：点击拖拽区触发文件选择
+      var editDrop = document.getElementById('editCoverDropZone');
+      var editInput = document.getElementById('editWorldCoverInput');
+      if (editDrop && editInput) {
+        editDrop.addEventListener('click', function(e) {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+          editInput.click();
+        });
+        editInput.addEventListener('change', function() {
+          var file = this.files[0];
+          if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            var img = document.getElementById('editCoverImg');
+            var preview = document.getElementById('editCoverPreview');
+            var placeholder = document.getElementById('editCoverPlaceholder');
+            if (img) img.src = ev.target.result;
+            if (preview) preview.style.display = '';
+            if (placeholder) placeholder.style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        });
+      }
 
       // 全局图标渲染兜底（所有动态内容加载完毕后）
       try { if (window.lucide) lucide.createIcons(); } catch(e) {}
@@ -897,7 +936,17 @@
           ]);
           if (loggedIn) {
             const result = await Promise.race([
-              window.API.storage.upload(fileInput.files[0]),
+              (window.API && window.API.storage
+                ? window.API.storage.upload(fileInput.files[0], true)
+                : window.AppwriteStorage
+                  ? window.AppwriteStorage.upload(fileInput.files[0], true).then(fid => ({
+                      fileId: fid,
+                      url: window.AppwriteStorage.previewUrl
+                        ? window.AppwriteStorage.previewUrl(fid)
+                        : (window.AppwriteStorage.fileUrl ? window.AppwriteStorage.fileUrl(fid) : '')
+                    }))
+                  : Promise.reject(new Error('Storage 不可用'))
+              ),
               new Promise((_, reject) => setTimeout(() => reject(new Error('封面上传超时')), 10000))
             ]);
             coverImage = result.url;
@@ -965,6 +1014,22 @@
         document.getElementById('editWorldType').value = world.type || '';
         document.getElementById('editWorldTone').value = world.tone || '';
         document.getElementById('editWorldDesc').value = world.description || '';
+
+        // 封面预览
+        const editCoverFileId = document.getElementById('editWorldCoverFileId');
+        const editCoverImg = document.getElementById('editCoverImg');
+        const editCoverPreview = document.getElementById('editCoverPreview');
+        const editCoverPlaceholder = document.getElementById('editCoverPlaceholder');
+        if (editCoverFileId) editCoverFileId.value = world.coverFileId || '';
+        if (world.coverImage) {
+          if (editCoverImg) editCoverImg.src = world.coverImage;
+          if (editCoverPreview) editCoverPreview.style.display = '';
+          if (editCoverPlaceholder) editCoverPlaceholder.style.display = 'none';
+        } else {
+          if (editCoverPreview) editCoverPreview.style.display = 'none';
+          if (editCoverPlaceholder) editCoverPlaceholder.style.display = '';
+        }
+
         document.getElementById('editWorldModal').classList.add('active');
       } catch (err) {
         showNotification('加载失败：' + err.message, 'error');
@@ -981,9 +1046,30 @@
 
       if (!name) { showNotification('请填写世界观名称', 'warning'); return; }
 
+      const data = { name, type, tone, description };
+
+      // 处理封面图片（可选）
+      const editFileInput = document.getElementById('editWorldCoverInput');
+      const existingFileId = document.getElementById('editWorldCoverFileId')?.value || '';
+      if (editFileInput && editFileInput.files[0]) {
+        try {
+          const loggedIn = await OCData.isLoggedIn().catch(() => false);
+          if (loggedIn && window.AppwriteStorage) {
+            const fileId = await window.AppwriteStorage.upload(editFileInput.files[0], true);
+            const url = window.AppwriteStorage.previewUrl
+              ? window.AppwriteStorage.previewUrl(fileId)
+              : (window.AppwriteStorage.fileUrl ? window.AppwriteStorage.fileUrl(fileId) : '');
+            data.coverImage = url;
+            data.coverFileId = fileId;
+          }
+        } catch (e) {
+          console.warn('封面上传失败，仅保存其他信息:', e.message);
+        }
+      }
+
       try {
         await Promise.race([
-          OCData.updateWorld(id, { name, type, tone, description }),
+          OCData.updateWorld(id, data),
           new Promise((_, reject) => setTimeout(() => reject(new Error('保存超时，请重试')), 10000))
         ]);
         closeModal('editWorldModal');
@@ -992,6 +1078,18 @@
       } catch (err) {
         showNotification('保存失败：' + err.message, 'error');
       }
+    }
+
+    // 移除编辑弹窗中的封面预览
+    function removeEditCover() {
+      const img = document.getElementById('editCoverImg');
+      const preview = document.getElementById('editCoverPreview');
+      const placeholder = document.getElementById('editCoverPlaceholder');
+      const fileIdInput = document.getElementById('editWorldCoverFileId');
+      if (img) img.src = '';
+      if (preview) preview.style.display = 'none';
+      if (placeholder) placeholder.style.display = '';
+      if (fileIdInput) fileIdInput.value = '';
     }
     
     // 显示用户信息（改为账号设置面板）
