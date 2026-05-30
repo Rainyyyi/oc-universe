@@ -105,10 +105,6 @@
           <i data-lucide="Upload"></i>
           <span>批量导入</span>
         </button>
-        <button class="btn btn-secondary" onclick="showDiaryModalPrompt()">
-          <i data-lucide="BookOpen"></i>
-          <span>日记管理</span>
-        </button>
         <button class="btn btn-primary" onclick="showCreateCharacterModal()">
           <i data-lucide="Plus"></i>
           <span>创建新角色</span>
@@ -319,63 +315,6 @@
         <button class="btn btn-ghost" onclick="closeCharacterDetail()">关闭</button>
         <button class="btn btn-secondary" id="detailEditBtn"><i data-lucide="UserPen"></i> 编辑</button>
         <button class="btn btn-primary" id="detailChatBtn"><i data-lucide="MessageCircle"></i> 与TA聊天</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 日记模态框 -->
-  <div class="modal-overlay" id="diaryModal">
-    <div class="modal modal-lg">
-      <div class="modal-header">
-        <h3 class="modal-title">日记管理</h3>
-        <button class="modal-close" onclick="closeModal('diaryModal')">
-          <i data-lucide="X"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <!-- 添加日记表单 -->
-        <div class="card" style="margin-bottom: var(--spacing-lg);">
-          <h4 style="margin-bottom: var(--spacing-md);">写新日记</h4>
-          <div class="form-group">
-            <label class="form-label">日记标题</label>
-            <input type="text" class="form-input" id="diaryTitle" placeholder="输入日记标题...">
-          </div>
-          <div class="form-group">
-            <label class="form-label">日记内容</label>
-            <textarea class="form-input form-textarea" id="diaryContent" rows="4" placeholder="写下今天发生的事情..."></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">心情</label>
-            <select class="form-input" id="diaryMood">
-              <option value="">选择心情...</option>
-              <option value="happy">😊 开心</option>
-              <option value="sad">😢 难过</option>
-              <option value="angry">😠 生气</option>
-              <option value="surprised">😮 惊讶</option>
-              <option value="calm">😌 平静</option>
-              <option value="anxious">😰 焦虑</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-checkbox">
-              <input type="checkbox" id="diaryForAI">
-              <span class="checkbox-custom"></span>
-              <span>📚 供AI学习 - 勾选后AI会学习这篇日记来更好地模仿角色说话风格</span>
-            </label>
-            <p class="form-hint">不勾选则日记仅用于个人记录，不会用于AI聊天</p>
-          </div>
-          <button class="btn btn-primary" onclick="addDiary()">
-            <i data-lucide="Plus"></i>
-            添加日记
-          </button>
-        </div>
-        
-        <!-- 日记列表 -->
-        <div id="diaryList">
-          <div class="empty-state">
-            <p>暂无日记</p>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -1023,133 +962,6 @@
         console.error('加载角色列表失败:', err);
         showNotification('加载角色列表失败：' + (err.message || ''), 'error');
       }
-    }
-    
-    // 当前编辑日记的角色ID
-    let currentDiaryCharacterId = null;
-    
-    // 显示日记管理（需要先选择角色）
-    function showDiaryModalPrompt() {
-      const characters = JSON.parse(localStorage.getItem('oc_characters') || '[]');
-      
-      if (characters.length === 0) {
-        alert('请先创建角色后再管理日记');
-        return;
-      }
-      
-      // 创建角色选择下拉框
-      const options = characters.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
-      const choice = prompt(`请选择要管理日记的角色：\n${options}\n\n请输入角色编号：`);
-      
-      if (!choice) return;
-      
-      const index = parseInt(choice) - 1;
-      if (isNaN(index) || index < 0 || index >= characters.length) {
-        alert('无效的选择');
-        return;
-      }
-      
-      showDiaryModal(characters[index].id);
-    }
-    
-    // 显示日记模态框
-    function showDiaryModal(characterId) {
-      currentDiaryCharacterId = characterId;
-      loadDiaries(characterId);
-      document.getElementById('diaryModal').classList.add('active');
-    }
-    
-    // 加载日记列表
-    function loadDiaries(characterId) {
-      const diaries = JSON.parse(localStorage.getItem('oc_diaries') || '[]');
-      const characterDiaries = diaries.filter(d => d.characterId === characterId);
-      
-      const diaryList = document.getElementById('diaryList');
-      
-      if (characterDiaries.length === 0) {
-        diaryList.innerHTML = '<div class="empty-state"><p>暂无日记</p></div>';
-        return;
-      }
-      
-      diaryList.innerHTML = characterDiaries.map(diary => `
-        <div class="card" style="margin-bottom: var(--spacing-md);">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div>
-              <h4 style="margin: 0 0 var(--spacing-xs);">${diary.title || '无标题'}</h4>
-              <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0;">
-                ${new Date(diary.createdAt).toLocaleDateString('zh-CN')}
-                ${diary.mood ? ' · ' + getMoodEmoji(diary.mood) : ''}
-                ${diary.forAI ? ' · 📚 供AI学习' : ''}
-              </p>
-            </div>
-            <button class="btn btn-ghost btn-icon" onclick="deleteDiary('${diary.id}')" title="删除">
-              <i data-lucide="Trash2"></i>
-            </button>
-          </div>
-          <p style="margin-top: var(--spacing-sm);">${diary.content}</p>
-        </div>
-      `).join('');
-    }
-    
-    // 获取心情emoji
-    function getMoodEmoji(mood) {
-      const moods = {
-        happy: '😊 开心',
-        sad: '😢 难过',
-        angry: '😠 生气',
-        surprised: '😮 惊讶',
-        calm: '😌 平静',
-        anxious: '😰 焦虑'
-      };
-      return moods[mood] || mood;
-    }
-    
-    // 添加日记
-    function addDiary() {
-      const title = document.getElementById('diaryTitle').value.trim();
-      const content = document.getElementById('diaryContent').value.trim();
-      const mood = document.getElementById('diaryMood').value;
-      const forAI = document.getElementById('diaryForAI').checked;
-      
-      if (!content) {
-        alert('请输入日记内容');
-        return;
-      }
-      
-      const diary = {
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-        characterId: currentDiaryCharacterId,
-        worldId: localStorage.getItem('oc_current_world'),
-        title: title,
-        content: content,
-        mood: mood,
-        forAI: forAI,
-        createdAt: new Date().toISOString()
-      };
-      
-      const diaries = JSON.parse(localStorage.getItem('oc_diaries') || '[]');
-      diaries.push(diary);
-      localStorage.setItem('oc_diaries', JSON.stringify(diaries));
-      
-      // 清空表单
-      document.getElementById('diaryTitle').value = '';
-      document.getElementById('diaryContent').value = '';
-      document.getElementById('diaryMood').value = '';
-      document.getElementById('diaryForAI').checked = false;
-      
-      // 刷新日记列表
-      loadDiaries(currentDiaryCharacterId);
-    }
-    
-    // 删除日记
-    function deleteDiary(diaryId) {
-      if (!confirm('确定要删除这篇日记吗？')) return;
-      
-      const diaries = JSON.parse(localStorage.getItem('oc_diaries') || '[]');
-      const filtered = diaries.filter(d => d.id !== diaryId);
-      localStorage.setItem('oc_diaries', JSON.stringify(filtered));
-      
-      loadDiaries(currentDiaryCharacterId);
     }
     
     // 检查是否有角色，控制引导页面/胶囊栏显示
