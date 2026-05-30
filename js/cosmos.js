@@ -373,13 +373,13 @@
         // 魔法旋流：宽窄交替的对角线条纹，仿佛魔力在流动
         bgStyle = `background:
           repeating-linear-gradient(142deg,
-            transparent 0, transparent 2px,
-            ${s} 2px, ${s} 4px,
-            transparent 4px, transparent 9px,
-            ${l1} 9px, ${l1} 10px,
-            transparent 10px, transparent 14px,
-            ${d1} 14px, ${d1} 16px,
-            transparent 16px, transparent 26px
+            transparent 0, transparent 3px,
+            ${s} 3px, ${s} 6px,
+            transparent 6px, transparent 10px,
+            ${l1} 10px, ${l1} 12px,
+            transparent 12px, transparent 15px,
+            ${d1} 15px, ${d1} 19px,
+            transparent 19px, transparent 28px
           );`;
         break;
 
@@ -388,14 +388,14 @@
         bgStyle = `background:
           repeating-linear-gradient(0deg,
             transparent 0, transparent 3px,
-            ${s} 3px, ${s} 5px,
-            transparent 5px, transparent 10px,
-            ${d1} 10px, ${d1} 13px,
-            transparent 13px, transparent 18px,
-            ${l1} 18px, ${l1} 19px,
-            transparent 19px, transparent 22px,
-            ${d2} 22px, ${d2} 24px,
-            transparent 24px, transparent 38px
+            ${s} 3px, ${s} 6px,
+            transparent 6px, transparent 10px,
+            ${d1} 10px, ${d1} 14px,
+            transparent 14px, transparent 18px,
+            ${l1} 18px, ${l1} 20px,
+            transparent 20px, transparent 23px,
+            ${d2} 23px, ${d2} 26px,
+            transparent 26px, transparent 40px
           );`;
         break;
 
@@ -403,13 +403,13 @@
         // 生机脉纹：粗宽主条纹 + 细腻暗纹，模拟行星大气层
         bgStyle = `background:
           repeating-linear-gradient(0deg,
-            transparent 0, transparent 2px,
-            ${l1} 2px, ${l1} 4px,
-            transparent 4px, transparent 16px,
-            ${s} 16px, ${s} 18px,
-            transparent 18px, transparent 20px,
-            ${d1} 20px, ${d1} 22px,
-            transparent 22px, transparent 34px
+            transparent 0, transparent 3px,
+            ${l1} 3px, ${l1} 5px,
+            transparent 5px, transparent 16px,
+            ${s} 16px, ${s} 19px,
+            transparent 19px, transparent 21px,
+            ${d1} 21px, ${d1} 24px,
+            transparent 24px, transparent 38px
           );`;
         break;
 
@@ -417,14 +417,14 @@
         // 锦绣暗纹：菱形交错的几何纹理，如织锦光泽
         bgStyle = `background:
           repeating-linear-gradient(45deg,
-            transparent 0, transparent 6px,
-            ${s} 6px, ${s} 7px,
-            transparent 7px, transparent 14px
+            transparent 0, transparent 5px,
+            ${s} 5px, ${s} 7px,
+            transparent 7px, transparent 12px
           ),
           repeating-linear-gradient(-45deg,
-            transparent 0, transparent 6px,
-            ${d1} 6px, ${d1} 7px,
-            transparent 7px, transparent 14px
+            transparent 0, transparent 5px,
+            ${d1} 5px, ${d1} 7px,
+            transparent 7px, transparent 12px
           );`;
         break;
 
@@ -432,18 +432,18 @@
       default:
         // 星尘斑点：大小不一的圆形斑点随机散布
         bgStyle = `background:
-          radial-gradient(circle at 18% 28%, ${l2} 2px, transparent 3px),
-          radial-gradient(circle at 62% 22%, ${d1} 3px, transparent 4px),
-          radial-gradient(circle at 38% 52%, ${s} 2px, transparent 3px),
-          radial-gradient(circle at 72% 58%, ${l1} 3px, transparent 4px),
-          radial-gradient(circle at 28% 68%, ${d2} 4px, transparent 5px),
-          radial-gradient(circle at 55% 72%, ${s} 2px, transparent 3px),
-          radial-gradient(circle at 78% 38%, ${d1} 3px, transparent 4px),
-          radial-gradient(circle at 22% 46%, ${l1} 2px, transparent 3px),
-          radial-gradient(circle at 48% 18%, ${l2} 2px, transparent 3px),
-          radial-gradient(circle at 68% 78%, ${s} 3px, transparent 4px),
-          radial-gradient(circle at 32% 82%, ${d1} 2px, transparent 3px),
-          radial-gradient(circle at 82% 14%, ${l1} 2px, transparent 3px);
+          radial-gradient(circle at 18% 28%, ${l2} 3px, transparent 4px),
+          radial-gradient(circle at 62% 22%, ${d1} 5px, transparent 6px),
+          radial-gradient(circle at 38% 52%, ${s} 3px, transparent 4px),
+          radial-gradient(circle at 72% 58%, ${l1} 5px, transparent 6px),
+          radial-gradient(circle at 28% 68%, ${d2} 6px, transparent 7px),
+          radial-gradient(circle at 55% 72%, ${s} 3px, transparent 4px),
+          radial-gradient(circle at 78% 38%, ${d1} 5px, transparent 6px),
+          radial-gradient(circle at 22% 46%, ${l1} 4px, transparent 5px),
+          radial-gradient(circle at 48% 18%, ${l2} 3px, transparent 4px),
+          radial-gradient(circle at 68% 78%, ${s} 5px, transparent 6px),
+          radial-gradient(circle at 32% 82%, ${d1} 3px, transparent 4px),
+          radial-gradient(circle at 82% 14%, ${l1} 4px, transparent 5px);
           background-color: transparent;`;
         break;
     }
