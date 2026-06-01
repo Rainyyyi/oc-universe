@@ -738,6 +738,8 @@
       const links = _allRelations.filter(r => !r.typeId || enabledTypes.has(r.typeId)).map(r => ({
         source: r.sourceId,
         target: r.targetId,
+        relation: r.typeName || r.description || '关系',
+        strength: r.strength || 0,
         lineStyle: { color: r.color || '#5470c6', width: Math.max(1.5, r.strength / 25) },
         value: r.strength,
         label: { show: false, formatter: r.typeName || r.description || '' }
@@ -870,7 +872,43 @@
 
     function changeLayout(type) {
       if (!chart) return;
-      chart.setOption({ series: [{ layout: type }] }, true);
+      // 先获取当前数据
+      const option = chart.getOption();
+      const seriesData = option.series[0];
+      if (!seriesData || !seriesData.data) return;
+      const nodes = seriesData.data;
+      const links = seriesData.links || [];
+
+      // 环形/树形：清除节点预置坐标，让布局引擎自行计算位置
+      if (type === 'circular' || type === 'tree') {
+        const cleanNodes = nodes.map(n => {
+          const { x, y, ...rest } = n;
+          return rest;
+        });
+        chart.setOption({
+          series: [{
+            layout: type,
+            circular: { rotateLabel: true },
+            data: cleanNodes,
+            links: links,
+            roam: true,
+            draggable: true,
+            force: {}
+          }]
+        }, true);
+      } else {
+        // 力导向：完全重建以保证力模拟正确启动
+        chart.setOption({
+          series: [{
+            layout: 'force',
+            data: nodes,
+            links: links,
+            roam: true,
+            draggable: true,
+            force: { repulsion: 400, edgeLength: [120, 250], gravity: 0.15 }
+          }]
+        }, true);
+      }
     }
 
     function updateGraph() {

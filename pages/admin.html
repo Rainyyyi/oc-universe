@@ -677,7 +677,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/appwrite@17/dist/iife/sdk.min.js"></script>
   <script src="../js/appwrite.js"></script>
   <script src="../js/api-client.js"></script>
-  <script src="../js/data.js"></script>
+  <script src="../js/data.js?v=8"></script>
   <script>
     // 页面初始化
     document.addEventListener('DOMContentLoaded', function() {
@@ -687,7 +687,7 @@
 
     // 加载真实统计数据
     async function loadRealStats() {
-      const stats = OCData.getStats();
+      const stats = await OCData.getStats();
       document.getElementById('statWorlds').textContent = stats.worlds;
       document.getElementById('statCharacters').textContent = stats.characters;
       document.getElementById('statStories').textContent = stats.stories;

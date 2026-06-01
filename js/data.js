@@ -272,11 +272,24 @@ function createInspiration(data) {
 }
 
 // ==================== 统计数据 ====================
-function getStats() {
-  const worlds = getWorlds();
-  const characters = getCharacters();
-  const stories = getStories();
-  const chats = getChats();
+async function getStats() {
+  // 优先走云端以获取真实数据，自动降级到 localStorage
+  const worlds = await withCloudFallback(
+    () => window.API.worlds.getAll(),
+    getWorlds
+  );
+  const characters = await withCloudFallback(
+    () => window.API.characters.getAll(),
+    getCharacters
+  );
+  const stories = await withCloudFallback(
+    () => window.API.stories.getAll(),
+    getStories
+  );
+  const chats = await withCloudFallback(
+    () => window.API.chats.getAll(),
+    getChats
+  );
   
   let totalWords = 0;
   stories.forEach(story => {
