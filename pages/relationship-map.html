@@ -699,6 +699,10 @@
       window.addEventListener('resize', () => chart.resize());
     }
 
+    // 缓存最近一次渲染的节点和连线数据（供 changeLayout 使用）
+    let _currentNodes = [];
+    let _currentLinks = [];
+
     function renderGraph() {
       if (!chart) {
         // chart 未初始化，尝试重新初始化
@@ -747,6 +751,10 @@
 
       // 图例更新
       updateLegend(_allRelations);
+
+      // 缓存供 changeLayout 使用
+      _currentNodes = nodes;
+      _currentLinks = links;
 
       // 用 merge 模式更新数据（不破坏力导向模拟）
       // force 布局必须用 merge，否则力模拟会丢失导致白屏
@@ -872,40 +880,56 @@
 
     function changeLayout(type) {
       if (!chart) return;
-      // 先获取当前数据
-      const option = chart.getOption();
-      const seriesData = option.series[0];
-      if (!seriesData || !seriesData.data) return;
-      const nodes = seriesData.data;
-      const links = seriesData.links || [];
+      if (_currentNodes.length === 0) return;
 
-      // 环形/树形：清除节点预置坐标，让布局引擎自行计算位置
       if (type === 'circular' || type === 'tree') {
-        const cleanNodes = nodes.map(n => {
-          const { x, y, ...rest } = n;
+        // 清除节点坐标，让布局引擎自行计算
+        const cleanNodes = _currentNodes.map(n => {
+          const { x, y, fixed, fx, fy, vx, vy, ...rest } = n;
           return rest;
         });
         chart.setOption({
           series: [{
+            type: 'graph',
             layout: type,
             circular: { rotateLabel: true },
             data: cleanNodes,
-            links: links,
+            links: _currentLinks,
+            categories: [],
             roam: true,
             draggable: true,
-            force: {}
+            label: {
+              show: true, position: 'bottom', fontSize: 15, fontWeight: 'bold',
+              color: '#FFFFFF', backgroundColor: 'rgba(96, 165, 250, 0.75)',
+              borderColor: '#60A5FA', borderWidth: 1, borderRadius: 6,
+              padding: [4, 8], shadowColor: 'rgba(0,0,0,0.5)', shadowBlur: 6, shadowOffsetY: 2
+            },
+            itemStyle: { borderColor: '#60A5FA', borderWidth: 2, shadowBlur: 10, shadowColor: 'rgba(96,165,250,0.3)' },
+            lineStyle: { width: 2, curveness: 0.2 },
+            emphasis: { focus: 'adjacency', lineStyle: { width: 4 }, itemStyle: { borderColor: '#93C5FD', borderWidth: 3 } }
           }]
         }, true);
       } else {
-        // 力导向：完全重建以保证力模拟正确启动
+        // 力导向：完全重建
         chart.setOption({
           series: [{
+            type: 'graph',
             layout: 'force',
-            data: nodes,
-            links: links,
+            data: _currentNodes,
+            links: _currentLinks,
+            categories: [],
             roam: true,
             draggable: true,
-            force: { repulsion: 400, edgeLength: [120, 250], gravity: 0.15 }
+            force: { repulsion: 400, edgeLength: [120, 250], gravity: 0.15 },
+            label: {
+              show: true, position: 'bottom', fontSize: 15, fontWeight: 'bold',
+              color: '#FFFFFF', backgroundColor: 'rgba(96, 165, 250, 0.75)',
+              borderColor: '#60A5FA', borderWidth: 1, borderRadius: 6,
+              padding: [4, 8], shadowColor: 'rgba(0,0,0,0.5)', shadowBlur: 6, shadowOffsetY: 2
+            },
+            itemStyle: { borderColor: '#60A5FA', borderWidth: 2, shadowBlur: 10, shadowColor: 'rgba(96,165,250,0.3)' },
+            lineStyle: { width: 2, curveness: 0.2 },
+            emphasis: { focus: 'adjacency', lineStyle: { width: 4 }, itemStyle: { borderColor: '#93C5FD', borderWidth: 3 } }
           }]
         }, true);
       }
